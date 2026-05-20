@@ -6,10 +6,7 @@
     "name": "Rick Falaschi",
     "url": "https://github.com/rickfalaschi"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rickfalaschi/nano-cms-plugin"
-  },
+  "repository": "https://github.com/rickfalaschi/nano-cms-plugin",
   "homepage": "https://github.com/rickfalaschi/nano-cms-plugin",
   "license": "MIT",
   "keywords": [
