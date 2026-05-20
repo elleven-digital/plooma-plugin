@@ -55,16 +55,20 @@ nano-cms-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── README.md
+├── shared/
+│   └── ssh-lib.sh          ← SSH/rsync/MySQL helpers used by all ssh-* skills
 └── skills/
     ├── install/
     ├── upgrade/
     ├── theme-convert/
-    ├── ssh-deploy/
-    ├── ssh-download/
-    └── ssh-content/
+    ├── ssh-deploy/         ← scripts/_lib.sh is a thin shim that sources shared/
+    ├── ssh-download/       ← scripts/_lib.sh is a thin shim that sources shared/
+    └── ssh-content/        ← scripts/_lib.sh is a thin shim that sources shared/
 ```
 
-Each skill has its own `SKILL.md` (the instructions Claude reads) and, where applicable, a `scripts/` folder with the bash helpers it runs. The shared SSH/rsync/MySQL helpers currently live duplicated inside each `ssh-*` skill's `scripts/_lib.sh` — a future version will extract them into a top-level `shared/` directory.
+Each skill has its own `SKILL.md` (the instructions Claude reads) and, where applicable, a `scripts/` folder with the bash helpers it runs.
+
+The three `ssh-*` skills all read the same `.deploy/ssh.json` and share SSH command building, rsync/scp targeting, DB credentials parsing, and remote-path resolution. Those helpers live in `shared/ssh-lib.sh`. Each skill's `scripts/_lib.sh` is a short shim that sources the shared lib and defines a skill-specific `parse_args()` (since each skill accepts a different set of flags). A bug fix or feature in the shared layer benefits all three skills at once.
 
 ## Versioning
 
