@@ -1,0 +1,23 @@
+{
+  "name": "nano-cms",
+  "version": "1.0.0",
+  "description": "Claude Code plugin for Nano CMS — install, upgrade, deploy via SSH, manage remote content, and convert static templates into Nano themes. Six skills covering the full lifecycle of a Nano CMS project.",
+  "author": {
+    "name": "Rick Falaschi",
+    "url": "https://github.com/rickfalaschi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rickfalaschi/nano-cms-plugin"
+  },
+  "homepage": "https://github.com/rickfalaschi/nano-cms-plugin",
+  "license": "MIT",
+  "keywords": [
+    "nano-cms",
+    "php",
+    "cms",
+    "ssh-deploy",
+    "claude-code",
+    "skill"
+  ]
+}

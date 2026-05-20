@@ -1,0 +1,11 @@
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+__MACOSX/
+*.swp
+*.swo
+.idea/
+.vscode/
+ssh.json
+.deploy/
