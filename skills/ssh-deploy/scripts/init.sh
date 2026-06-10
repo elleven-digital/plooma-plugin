@@ -170,8 +170,8 @@ ok "DB imported"
 rm -f "$dump_file"
 
 # --- 7) Run migrate (idempotent — catches any schema gap between dump and current code) ---
-step "Running php bin/nano migrate"
-mig_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/nano migrate 2>&1" || true)
+step "Running php bin/ellev migrate"
+mig_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev migrate 2>&1" || true)
 echo "$mig_out" | sed 's/^/  /' >&2
 ok "Migrations OK"
 

@@ -2,16 +2,16 @@
 # Execute a single content write operation on the remote Ellev site.
 #
 # Maps a high-level --action (item:create, page:update, etc.) onto the
-# matching bin/nano subcommand on the remote, with proper flag plumbing
+# matching bin/ellev subcommand on the remote, with proper flag plumbing
 # (--json-stdin, --dry-run, --confirm, --format=json). Returns the JSON
-# response from bin/nano on stdout.
+# response from bin/ellev on stdout.
 #
 # Why this script exists when the model could just SSH directly:
 #   - Hides the SSH command/target resolution behind --config (skill stays
 #     focused on intent, not transport)
 #   - Routes JSON payloads through stdin properly (avoids quoting hell)
-#   - Single place for "how do we talk to bin/nano" — easy to evolve
-#   - Predictable error envelope ({"ok": false, ...}) when SSH or nano fails
+#   - Single place for "how do we talk to bin/ellev" — easy to evolve
+#   - Predictable error envelope ({"ok": false, ...}) when SSH or ellev fails
 #
 # This script DOES NOT perform a backup. The skill is expected to call
 # backup.sh BEFORE write.sh for any non-trivial write. Keeping them split
@@ -58,18 +58,18 @@ fi
 eval "$(resolve_ssh_cmd)"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Build the bin/nano subcommand based on --action
+# Build the bin/ellev subcommand based on --action
 # ─────────────────────────────────────────────────────────────────────────────
 NEEDS_JSON=0
 NEEDS_SLUG=0
 NEEDS_CONFIRM=0
 case "$ACTION" in
-    item:create)        NANO_VERB="item:create"   ; NEEDS_JSON=1 ;;
-    item:update)        NANO_VERB="item:update"   ; NEEDS_JSON=1 ; NEEDS_SLUG=1 ;;
-    item:publish)       NANO_VERB="item:publish"  ; NEEDS_SLUG=1 ;;
-    item:unpublish)     NANO_VERB="item:unpublish"; NEEDS_SLUG=1 ;;
-    item:delete)        NANO_VERB="item:delete"   ; NEEDS_SLUG=1 ; NEEDS_CONFIRM=1 ;;
-    page:update)        NANO_VERB="page:update"   ; NEEDS_JSON=1 ;;
+    item:create)        ELLEV_VERB="item:create"   ; NEEDS_JSON=1 ;;
+    item:update)        ELLEV_VERB="item:update"   ; NEEDS_JSON=1 ; NEEDS_SLUG=1 ;;
+    item:publish)       ELLEV_VERB="item:publish"  ; NEEDS_SLUG=1 ;;
+    item:unpublish)     ELLEV_VERB="item:unpublish"; NEEDS_SLUG=1 ;;
+    item:delete)        ELLEV_VERB="item:delete"   ; NEEDS_SLUG=1 ; NEEDS_CONFIRM=1 ;;
+    page:update)        ELLEV_VERB="page:update"   ; NEEDS_JSON=1 ;;
     *)
         echo "{\"ok\": false, \"error\": \"Unknown --action '${ACTION}'. Supported: item:create, item:update, item:publish, item:unpublish, item:delete, page:update\"}" >&2
         exit 2
@@ -103,22 +103,22 @@ remote_args="${remote_args} --format=json"
 [[ "$CONFIRM" == "1" && "$NEEDS_CONFIRM" == "1" ]] && remote_args="${remote_args} --confirm"
 
 REMOTE_PREFIX=$(remote_prefix)
-REMOTE_CMD="${REMOTE_PREFIX}./bin/nano ${NANO_VERB} ${remote_args}"
+REMOTE_CMD="${REMOTE_PREFIX}./bin/ellev ${ELLEV_VERB} ${remote_args}"
 
-log_step "Executing on ${SSH_TARGET}: bin/nano ${NANO_VERB} ${remote_args}"
+log_step "Executing on ${SSH_TARGET}: bin/ellev ${ELLEV_VERB} ${remote_args}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Run via SSH. When the action needs JSON, capture local stdin and pipe
-# straight into the SSH stdin → remote bin/nano stdin (which has --json-stdin).
+# straight into the SSH stdin → remote bin/ellev stdin (which has --json-stdin).
 # ─────────────────────────────────────────────────────────────────────────────
 # Runs the SSH call. With JSON_STDIN=1, local stdin (which is the user's
-# piped-in JSON) flows through SSH to the remote bin/nano process — that's
+# piped-in JSON) flows through SSH to the remote bin/ellev process — that's
 # the default ssh behavior and we don't have to do anything special.
 if ! eval "$SSH_CMD" "$SSH_TARGET" "$REMOTE_CMD" 2>/tmp/write-err.log; then
     log_err "Remote command failed:"
     cat /tmp/write-err.log >&2
     rm -f /tmp/write-err.log
-    echo "{\"ok\": false, \"error\": \"SSH or remote bin/nano failed — see stderr.\"}"
+    echo "{\"ok\": false, \"error\": \"SSH or remote bin/ellev failed — see stderr.\"}"
     exit 1
 fi
 rm -f /tmp/write-err.log

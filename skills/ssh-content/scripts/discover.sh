@@ -25,22 +25,22 @@ REMOTE_PATH=$(cfg_get '.ssh.remote_path')
 
 log_step "Discovering content on ${SSH_TARGET}:${REMOTE_PATH}"
 
-types_json=$(remote_nano "item:types --format=json" 2>/tmp/discover-err.log) || {
-    log_err "Failed to call bin/nano item:types on remote."
+types_json=$(remote_ellev "item:types --format=json" 2>/tmp/discover-err.log) || {
+    log_err "Failed to call bin/ellev item:types on remote."
     cat /tmp/discover-err.log >&2
     rm -f /tmp/discover-err.log
     cat <<EOF
-{"ok": false, "error": "Could not run 'bin/nano item:types' on remote. The server may have an older Ellev without content commands. Upgrade required: commit dcebc50 or later.", "ssh_target": "${SSH_TARGET}"}
+{"ok": false, "error": "Could not run 'bin/ellev item:types' on remote. The server may have an older Ellev without content commands. Upgrade required: commit dcebc50 or later.", "ssh_target": "${SSH_TARGET}"}
 EOF
     exit 1
 }
 
-pages_json=$(remote_nano "page:list --format=json" 2>/tmp/discover-err.log) || {
-    log_err "Failed to call bin/nano page:list on remote."
+pages_json=$(remote_ellev "page:list --format=json" 2>/tmp/discover-err.log) || {
+    log_err "Failed to call bin/ellev page:list on remote."
     cat /tmp/discover-err.log >&2
     rm -f /tmp/discover-err.log
     cat <<EOF
-{"ok": false, "error": "Could not run 'bin/nano page:list' on remote.", "ssh_target": "${SSH_TARGET}"}
+{"ok": false, "error": "Could not run 'bin/ellev page:list' on remote.", "ssh_target": "${SSH_TARGET}"}
 EOF
     exit 1
 }

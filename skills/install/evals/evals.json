@@ -5,7 +5,7 @@
       "id": 1,
       "name": "happy-path-empty-folder",
       "prompt": "Instala o Ellev nessa pasta. Use o MySQL local (host localhost, port 3306, user root, senha vazia). Crie um banco chamado 'nano_eval_1'. O admin inicial deve ser 'admin@test.local' com senha 'admin12345' e nome 'Admin Teste'. Não precisa configurar APP_URL nem SMTP agora.",
-      "expected_output": "Repo clonado, .env preenchido com as credenciais informadas, bin/nano install rodou com sucesso, login funciona em /admin/login. Pasta atual contém core/, public/, bin/, theme/, .htaccess, public/robots.txt, public/.htaccess.",
+      "expected_output": "Repo clonado, .env preenchido com as credenciais informadas, bin/ellev install rodou com sucesso, login funciona em /admin/login. Pasta atual contém core/, public/, bin/, theme/, .htaccess, public/robots.txt, public/.htaccess.",
       "files": []
     },
     {
@@ -31,7 +31,7 @@
           "content": "<?php\n// Fake pre-existing Ellev installation\nnamespace Ellev;\n"
         },
         {
-          "name": "bin/nano",
+          "name": "bin/ellev",
           "content": "#!/usr/bin/env php\n<?php\n// fake CLI\n"
         }
       ]

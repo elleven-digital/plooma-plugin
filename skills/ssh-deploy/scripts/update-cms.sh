@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update Ellev core/engine on remote: rsync core/, public/, bin/, migrations/
-# (NOT theme, NOT storage, NOT .env), then run `php bin/nano migrate`.
+# (NOT theme, NOT storage, NOT .env), then run `php bin/ellev migrate`.
 # Refuses if Ellev isn't already installed at target.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -86,8 +86,8 @@ ok "Engine synced"
 # changes into their live .htaccess (they're gitignored — not auto-synced).
 
 # --- Run migrations ---
-step "Running php bin/nano migrate"
-mig_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/nano migrate 2>&1" || true)
+step "Running php bin/ellev migrate"
+mig_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev migrate 2>&1" || true)
 echo "$mig_out" | sed 's/^/  /' >&2
 if echo "$mig_out" | grep -qiE "error|fatal"; then
     err "Migration encountered errors. Review output above."

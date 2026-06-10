@@ -185,7 +185,7 @@ Run `scripts/init.sh --config .deploy/ssh.json`. It:
    - `theme/` legacy source files (anything matching `theme/*.php` directly in theme root, not in `theme/templates/` etc — these are leftovers from `ellev:theme-convert`)
 4. Generates remote `.env` from config (`APP_URL`, `APP_BASE_PATH`, `DB_*`, etc.) — **not committing** anything from local `.env`
 5. Uploads SQL dump and runs `mysql < dump.sql` on remote → cleans up the dump
-6. Runs on remote: `php bin/nano migrate` (just in case the dump didn't include the migration log table state)
+6. Runs on remote: `php bin/ellev migrate` (just in case the dump didn't include the migration log table state)
 7. Writes `robots.txt` on remote with `Sitemap: <APP_URL>/sitemap.xml` and a default `User-agent: * / Allow: /` (overrides the example.com placeholder shipped in the repo)
 8. `chmod 0640 .env` on remote (so web server can read but world cannot)
 9. Verifies with `curl -s -o /dev/null -w "%{http_code}" <APP_URL>` — expects 200, fails loud if 50x or 404
@@ -198,7 +198,7 @@ Run `scripts/update-cms.sh --config .deploy/ssh.json`. It:
 
 1. Verifies Ellev exists at target (refuses if EMPTY)
 2. `rsync -avz` (with per-subtree `--delete`) of `core/`, `bin/`, `migrations/` + Ellev-shipped root files (`index.php`, `.htaccess.example`, `robots.txt.example`) — **not** theme, storage, .env, live `.htaccess`, live `robots.txt`
-3. Runs on remote: `php bin/nano migrate` to apply any pending migrations from the new files
+3. Runs on remote: `php bin/ellev migrate` to apply any pending migrations from the new files
 4. Verifies the homepage still returns 200
 
 Doesn't touch `theme/`, `storage/uploads/`, or `.env`. The live DB schema gets updated by `migrate`.
@@ -212,7 +212,7 @@ Run `scripts/update-theme.sh --config .deploy/ssh.json`. It:
    - `theme/install/seed.php` (already ran on init — re-running would be guarded by idempotency but no need to ship it)
    - `storage/uploads/*` (lives outside theme but worth listing for clarity)
    - `.env`
-3. Runs on remote: `php bin/nano schema:validate && php bin/nano page:sync`
+3. Runs on remote: `php bin/ellev schema:validate && php bin/ellev page:sync`
 
 `page:sync` adds new pages declared in `site.json` to the DB (status: draft) and updates existing page metadata. It does NOT delete or alter content the editor already typed in admin — it only touches structural metadata.
 

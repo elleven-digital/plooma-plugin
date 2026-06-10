@@ -1,11 +1,11 @@
 ---
 name: ssh-content
-description: Update content on a Ellev (formerly Nano CMS) site that's deployed on a remote server, via SSH. Creates/edits/publishes posts, services, pages, and any other content type defined in the site's `theme/site.json` — schema-aware, so it works on ANY Ellev site without knowing fields ahead of time. Reuses `.deploy/ssh.json` from ellev:ssh-deploy/ellev:ssh-download. Backs up the affected database tables before any write. Triggers whenever the user wants to manage live content remotely — phrases like "cria um post no blog do site X", "publica esse draft", "muda o texto do hero da home", "atualiza a página de serviços", "lista os drafts", "edita o post sobre Y", "altera o eyebrow do site", "create a blog post on the deployed site", "publish all drafts", "edit the about page on production". Triggers in Portuguese and English. The skill discovers types and fields at runtime by calling `bin/nano item:types` and `bin/nano <kind>:schema` on the remote, so it adapts to whatever the site has — posts, services, cases, events, team members, pages with custom fields, etc. Do NOT use for: (a) bulk media uploads (out of scope — use admin), (b) changing the schema itself / adding new content types (that's `theme/site.json`, edit locally and deploy), (c) editing templates or theme code (use a code editor + ellev:ssh-deploy), (d) sites that are NOT deployed remotely yet (use the local admin or a local-only content skill).
+description: Update content on a Ellev (formerly Nano CMS) site that's deployed on a remote server, via SSH. Creates/edits/publishes posts, services, pages, and any other content type defined in the site's `theme/site.json` — schema-aware, so it works on ANY Ellev site without knowing fields ahead of time. Reuses `.deploy/ssh.json` from ellev:ssh-deploy/ellev:ssh-download. Backs up the affected database tables before any write. Triggers whenever the user wants to manage live content remotely — phrases like "cria um post no blog do site X", "publica esse draft", "muda o texto do hero da home", "atualiza a página de serviços", "lista os drafts", "edita o post sobre Y", "altera o eyebrow do site", "create a blog post on the deployed site", "publish all drafts", "edit the about page on production". Triggers in Portuguese and English. The skill discovers types and fields at runtime by calling `bin/ellev item:types` and `bin/ellev <kind>:schema` on the remote, so it adapts to whatever the site has — posts, services, cases, events, team members, pages with custom fields, etc. Do NOT use for: (a) bulk media uploads (out of scope — use admin), (b) changing the schema itself / adding new content types (that's `theme/site.json`, edit locally and deploy), (c) editing templates or theme code (use a code editor + ellev:ssh-deploy), (d) sites that are NOT deployed remotely yet (use the local admin or a local-only content skill).
 ---
 
 # Manage Ellev content on a deployed server
 
-This skill lets you create, edit, and publish content on a live Ellev site over SSH, using the `bin/nano item:*` and `bin/nano page:*` commands the Ellev exposes. It's schema-aware: it figures out what content types and fields the specific site has by asking the server, then guides the user through changes in their own terms.
+This skill lets you create, edit, and publish content on a live Ellev site over SSH, using the `bin/ellev item:*` and `bin/ellev page:*` commands the Ellev exposes. It's schema-aware: it figures out what content types and fields the specific site has by asking the server, then guides the user through changes in their own terms.
 
 ## Why SSH and not the admin web UI
 
@@ -17,9 +17,9 @@ The admin UI is still the right choice for: media uploads, layout changes, compl
 
 ## Required server-side dependency
 
-This skill talks to `bin/nano` content commands that ship with Ellev commit `dcebc50` or later (`item:types`, `item:schema`, `item:create`, etc.). If the remote server has an older Ellev, **upgrade it first** with the `ellev:ssh-deploy` action `update` or via `ellev:upgrade` on a local clone followed by deploy.
+This skill talks to `bin/ellev` content commands that ship with Ellev commit `dcebc50` or later (`item:types`, `item:schema`, `item:create`, etc.). If the remote server has an older Ellev, **upgrade it first** with the `ellev:ssh-deploy` action `update` or via `ellev:upgrade` on a local clone followed by deploy.
 
-A quick way to check: `ssh <target> "cd <remote_path> && ./bin/nano item:types"` — if it errors with "Unknown command: item:types", the server needs an upgrade.
+A quick way to check: `ssh <target> "cd <remote_path> && ./bin/ellev item:types"` — if it errors with "Unknown command: item:types", the server needs an upgrade.
 
 ## How the skill works at a glance
 
@@ -30,7 +30,7 @@ A quick way to check: `ssh <target> "cd <remote_path> && ./bin/nano item:types"`
 3. Validate    — dry-run on remote, see if it'd work
 4. Confirm     — show the user the exact thing about to happen
 5. Backup      — mysqldump the affected tables (items, pages)
-6. Execute     — run the real bin/nano command via SSH
+6. Execute     — run the real bin/ellev command via SSH
 7. Report      — what changed, where backup is, how to roll back
 ```
 
@@ -63,7 +63,7 @@ Run `scripts/discover.sh --config .deploy/ssh.json` and parse the JSON it return
 }
 ```
 
-If discovery fails (SSH issue, missing `bin/nano content commands`), surface the error verbatim so the user can fix the upstream problem.
+If discovery fails (SSH issue, missing `bin/ellev content commands`), surface the error verbatim so the user can fix the upstream problem.
 
 **Use this discovery output as ground truth.** Don't assume any site has "posts" or "pages" — many don't, or call them differently. Match the user's request against what actually exists.
 
@@ -87,7 +87,7 @@ If the user's request doesn't fit any operation, say so plainly — don't invent
 
 When the request requires fields, fetch the schema first:
 ```bash
-ssh <target> "cd <remote_path> && ./bin/nano item:schema posts --format=json"
+ssh <target> "cd <remote_path> && ./bin/ellev item:schema posts --format=json"
 ```
 
 The schema response lists every field with `name`, `type`, `label`, and `required`. Use this to:
@@ -100,7 +100,7 @@ The schema response lists every field with `name`, `type`, `label`, and `require
 For any create or update, run the operation with `--dry-run --format=json` first:
 
 ```bash
-echo '<JSON>' | ssh <target> "cd <remote_path> && ./bin/nano item:create posts --json-stdin --dry-run --format=json"
+echo '<JSON>' | ssh <target> "cd <remote_path> && ./bin/ellev item:create posts --json-stdin --dry-run --format=json"
 ```
 
 The remote validates the same way it would on a real write — required fields, type checks, slug collisions. If it returns `{"ok": false, "error": "..."}`, surface the error and let the user fix the input. Only proceed to phase 4 on `{"ok": true, "dry_run": true, ...}`.
@@ -150,7 +150,7 @@ Continuar? (y/N)
 
 Run `scripts/backup.sh --config .deploy/ssh.json --tables items,pages` before ANY write. It:
 1. Runs `mysqldump --single-transaction --no-tablespaces` on the remote DB for the listed tables
-2. Streams the dump back to local `/tmp/nano-content-backup-<ts>.sql`
+2. Streams the dump back to local `/tmp/ellev-content-backup-<ts>.sql`
 3. Reports the path + size
 
 Tell the user the backup path so they can `mysql ... < <path>` to restore if needed. The backup is automatic — the user doesn't have to ask.
@@ -169,7 +169,7 @@ Supported actions:
 - `item:delete <type> <slug>` (requires `--confirm`)
 - `page:update <key>`
 
-The script SSHs in, runs `bin/nano <action> --format=json`, captures stdout, and returns it. Errors come back as structured `{"ok": false}` JSON — handle them, don't pretend they didn't happen.
+The script SSHs in, runs `bin/ellev <action> --format=json`, captures stdout, and returns it. Errors come back as structured `{"ok": false}` JSON — handle them, don't pretend they didn't happen.
 
 ## Phase 7 — Report back
 
@@ -183,8 +183,8 @@ After execution:
   Status:      draft  (não está visível ainda — use 'publica esse post' pra publicar)
   URL futura:  https://<site>/blog/como-escolher-um-advogado
 
-  Backup:      /tmp/nano-content-backup-20260429-1432.sql
-  Rollback:    se algo deu errado: mysql -u<user> ... < /tmp/nano-content-backup-...
+  Backup:      /tmp/ellev-content-backup-20260429-1432.sql
+  Rollback:    se algo deu errado: mysql -u<user> ... < /tmp/ellev-content-backup-...
 ```
 
 For batch operations: report each operation's outcome, total successes/failures, single backup path covering the whole batch.
@@ -238,19 +238,19 @@ If a required field is missing and you can't reasonably infer it, ask. Don't mak
 
 ## Edge cases
 
-- **Server doesn't have `bin/nano item:types`**: Pre-flight check fails → tell user the remote needs Ellev upgraded (commit dcebc50 or later). Don't try alternatives.
+- **Server doesn't have `bin/ellev item:types`**: Pre-flight check fails → tell user the remote needs Ellev upgraded (commit dcebc50 or later). Don't try alternatives.
 - **`site.json` defines a field type the skill doesn't recognize**: Pass through untouched. The Content validator is permissive — it only enforces required + type sanity, and it lets unknown fields through. The skill should do the same.
 - **Slug collision on create**: the server will reject with `"Slug already exists for type 'X': Y"`. Suggest a variant or ask the user.
 - **Field is a `repeater`**: pass an array of objects matching the inner field schema. Discover via `item:schema` to see what each repeater item should look like.
 - **Field is `image`**: store the value as a path or URL string. Actual upload of new images is OUT OF SCOPE — tell the user to upload via admin first, then reference the URL.
 - **Network drops mid-write**: writes are single SQL statements, so they either succeed or don't. The backup is your rollback. Don't auto-retry — re-running might create duplicates.
-- **User wants to undo**: the backup at `/tmp/nano-content-backup-<ts>.sql` is the rollback. It's a full table dump — `mysql ... < <path>` brings the items/pages tables back to pre-write state. Tell the user this if they ask.
+- **User wants to undo**: the backup at `/tmp/ellev-content-backup-<ts>.sql` is the rollback. It's a full table dump — `mysql ... < <path>` brings the items/pages tables back to pre-write state. Tell the user this if they ask.
 
 ## Common host gotchas
 
 - **`mysqldump` not in PATH on remote**: shared hosts often need `/usr/bin/mysqldump`. The backup script tries the bare command first; if that fails, point the user to running `which mysqldump` on the remote and pass the path via `--mysqldump=<path>`.
 - **Hostinger / cPanel restrict `LOCK TABLES`**: the backup script uses `--single-transaction --no-tablespaces` to work around this — same flags as ellev:ssh-deploy/download.
-- **PHP CLI not in default PATH**: `bin/nano` uses `#!/usr/bin/env php`. If that fails, the user can set `php` in their remote shell's PATH or pass an absolute path via `--php=<path>` (write.sh and discover.sh both support this).
+- **PHP CLI not in default PATH**: `bin/ellev` uses `#!/usr/bin/env php`. If that fails, the user can set `php` in their remote shell's PATH or pass an absolute path via `--php=<path>` (write.sh and discover.sh both support this).
 
 ## Scripts
 
@@ -264,7 +264,7 @@ The actual operations live in `scripts/`. Each:
 |---|---|
 | `_lib.sh` | Shared helpers: `cfg_get`, `resolve_ssh_cmd`, `confirm_yes`, logging |
 | `discover.sh` | One-shot discovery: types + pages + remote info, returns single JSON |
-| `backup.sh` | mysqldump remote tables to local `/tmp/nano-content-backup-<ts>.sql` |
+| `backup.sh` | mysqldump remote tables to local `/tmp/ellev-content-backup-<ts>.sql` |
 | `write.sh` | Execute one item:* or page:* command via SSH; passes through `--format=json` |
 
 Read the scripts to see the exact commands they run. They're the source of truth.

@@ -1,11 +1,11 @@
 ---
 name: install
-description: Install Ellev (formerly Nano CMS) (elleven-digital/ellev) into the current directory FROM SCRATCH. Downloads the latest released version as a tarball, gathers DB and admin credentials interactively, writes `.env`, runs the bundled installer (migrations + initial user + per-project files), and records the installed version in `.nano-version` so future upgrades work without depending on git. Use this skill whenever the user wants a fresh install — phrases like "instala o nano aqui", "set up nano-cms in this folder", "bootstrap nano", "create a new nano project", "i just want a working nano-cms here", "instalar o nano nessa pasta". Triggers in Portuguese and English. Do NOT use when: (a) converting static HTML/PHP into a theme — that's ellev:theme-convert, (b) updating/upgrading an existing Ellev install to a newer version, (c) running specific CLI commands like `bin/nano migrate` or `page:sync` on a project that's already installed, (d) answering reference questions about Ellev's schema, helpers, fields, options, or features. Mentioning Ellev-specific keywords like "nano", "site.json", or "field()" alone does NOT trigger this skill — only explicit setup/install/bootstrap intent does.
+description: Install Ellev (formerly Nano CMS) (elleven-digital/ellev) into the current directory FROM SCRATCH. Downloads the latest released version as a tarball, gathers DB and admin credentials interactively, writes `.env`, runs the bundled installer (migrations + initial user + per-project files), and records the installed version in `.ellev-version` so future upgrades work without depending on git. Use this skill whenever the user wants a fresh install — phrases like "instala o nano aqui", "set up nano-cms in this folder", "bootstrap nano", "create a new nano project", "i just want a working nano-cms here", "instalar o nano nessa pasta". Triggers in Portuguese and English. Do NOT use when: (a) converting static HTML/PHP into a theme — that's ellev:theme-convert, (b) updating/upgrading an existing Ellev install to a newer version, (c) running specific CLI commands like `bin/ellev migrate` or `page:sync` on a project that's already installed, (d) answering reference questions about Ellev's schema, helpers, fields, options, or features. Mentioning Ellev-specific keywords like "nano", "site.json", or "field()" alone does NOT trigger this skill — only explicit setup/install/bootstrap intent does.
 ---
 
 # Install Ellev
 
-This skill installs Ellev into the current working directory. It's an interactive flow: download a versioned release tarball, gather config, configure, run installer, write `.nano-version`, report back. **The project is left without a `.git/` of Ellev** — Ellev is a dependency, not a fork. Future upgrades use the tarball+manifest model (see `ellev:upgrade`).
+This skill installs Ellev into the current working directory. It's an interactive flow: download a versioned release tarball, gather config, configure, run installer, write `.ellev-version`, report back. **The project is left without a `.git/` of Ellev** — Ellev is a dependency, not a fork. Future upgrades use the tarball+manifest model (see `ellev:upgrade`).
 
 ## Goal of this skill
 
@@ -15,7 +15,7 @@ By the end, the user has:
 - A live database with migrations applied
 - An initial admin user
 - The per-project files (`.htaccess`, `robots.txt`) at the project root, copied from the `.example` templates
-- A `.nano-version` file recording the installed version (e.g., `v1.0.0`) for future upgrades
+- A `.ellev-version` file recording the installed version (e.g., `v1.0.0`) for future upgrades
 - A clean filesystem: `.htaccess.example`, `robots.txt.example`, and `INSTALL.md` are removed after a successful install. The `migrations/` folder is **kept** because future engine updates need to ship new migrations to remote servers
 - **No `.git/` of Ellev** in the project. Ellev is a versioned dependency, not a fork in their codebase.
 
@@ -28,9 +28,9 @@ They should be able to log into `/admin/login` immediately after.
 2. Fetch       — download release tarball from elleven-digital/ellev
 3. Gather      — DB creds + initial admin (required), APP_URL (optional)
 4. Write .env  — from .env.example template + answers
-5. Install     — run ./bin/nano install with credentials
+5. Install     — run ./bin/ellev install with credentials
 6. Cleanup     — remove .example scaffolding and INSTALL.md
-7. Version     — write .nano-version with the installed version
+7. Version     — write .ellev-version with the installed version
 8. Report      — login URL + next steps
 ```
 
@@ -40,7 +40,7 @@ Stop and ask the user before doing anything destructive. If something fails, do 
 
 Run `ls -la` in the current directory and reason about what's there:
 
-- **If `core/Bootstrap.php` exists** → Ellev is already installed here. STOP. Tell the user: "Ellev appears to already be installed in this folder. Re-running install would overwrite files. Do you want to (a) abort, (b) wipe and reinstall, (c) run `ellev:upgrade` to bring it to the latest version, (d) just run `./bin/nano install` to apply pending migrations on the existing install?" Wait for explicit confirmation.
+- **If `core/Bootstrap.php` exists** → Ellev is already installed here. STOP. Tell the user: "Ellev appears to already be installed in this folder. Re-running install would overwrite files. Do you want to (a) abort, (b) wipe and reinstall, (c) run `ellev:upgrade` to bring it to the latest version, (d) just run `./bin/ellev install` to apply pending migrations on the existing install?" Wait for explicit confirmation.
 
 - **If folder is empty** → ideal case, proceed. The tarball will extract straight into `./`.
 
@@ -80,7 +80,7 @@ curl -fSL "$TARBALL_URL" -o "$TMPDIR/nano.tar.gz" || {
 
 # 3. Extract
 tar -xzf "$TMPDIR/nano.tar.gz" -C "$TMPDIR/"
-EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d \( -name "ellev-*" -o -name "nano-cms-*" \) | head -1)
+EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d \( -name "ellev-*" \) | head -1)
 
 # 4. Copy contents to current directory (NOT including a wrapper folder).
 #    The tarball extracts into nano-cms-1.0.0/, we want its contents in cwd.
@@ -90,8 +90,8 @@ EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d \( -name "ellev-*" -o -name "nano
 rm -rf "$TMPDIR"
 
 # 6. Verify
-[ -f core/Bootstrap.php ] && [ -f bin/nano ] || {
-    echo "Install failed — core/Bootstrap.php or bin/nano not found after extraction." >&2
+[ -f core/Bootstrap.php ] && [ -f bin/ellev ] || {
+    echo "Install failed — core/Bootstrap.php or bin/ellev not found after extraction." >&2
     exit 1
 }
 
@@ -104,7 +104,7 @@ Why tarball and not git clone:
 - **Versioned by design.** You always know exactly what version is going in.
 - **Cross-machine reliable.** Same flow works whether the user is on the machine that originally installed it or coming fresh.
 
-If the user passes `--repo=<some/fork>`, swap the `REPO` variable. The user's fork must also be tagged for tarballs to work; if not, recommend they tag it or fall back to a default-branch tarball: `https://github.com/<repo>/archive/refs/heads/main.tar.gz` (works but no version pinning — record `main-<short-sha>` in `.nano-version`).
+If the user passes `--repo=<some/fork>`, swap the `REPO` variable. The user's fork must also be tagged for tarballs to work; if not, recommend they tag it or fall back to a default-branch tarball: `https://github.com/<repo>/archive/refs/heads/main.tar.gz` (works but no version pinning — record `main-<short-sha>` in `.ellev-version`).
 
 The tarball Github gives us already excludes `.git/` — so there's nothing to clean up afterwards on that front.
 
@@ -187,7 +187,7 @@ chmod 0600 .env
 ## Step 5 — Run the installer
 
 ```bash
-./bin/nano install
+./bin/ellev install
 ```
 
 Pass credentials via flags only if `INITIAL_USER_*` are NOT in `.env` (they should be, from step 4). The CLI reads env first, flags override.
@@ -203,7 +203,7 @@ Watch the output for:
 
 ## Step 6 — Clean up installation scaffolding
 
-Once `bin/nano install` reports success, a few files have served their purpose and only add clutter to the working project. Remove them so the user opens to a clean filesystem.
+Once `bin/ellev install` reports success, a few files have served their purpose and only add clutter to the working project. Remove them so the user opens to a clean filesystem.
 
 ```bash
 # Per-project file templates — only remove the .example if its live
@@ -236,7 +236,7 @@ rm -f .gitignore
 # read the manifest from the tarball, never from the local copy, so
 # the file sits dormant in the project after install. Worse: a user
 # who edits the local copy expecting to customize upgrade behavior
-# would get no effect (silently confusing). The `.nano-version` file
+# would get no effect (silently confusing). The `.ellev-version` file
 # keeps `manifest_url` pointing at the upstream version on GitHub
 # for anyone who wants to consult it.
 rm -f engine-manifest.json
@@ -253,22 +253,22 @@ If any removal fails (permissions, file already gone), don't error — just note
 
 ### Why migrations/ stays around
 
-Earlier versions of this skill removed `migrations/` after install on the theory that "the schema lives in the DB now." That backfired in the deploy flow: `ellev:ssh-deploy update-cms` rsyncs `core/`, `bin/`, AND `migrations/` to the server, then runs `bin/nano migrate` remotely to apply pending schema changes. Without local migration files, deploys would silently push core changes that depend on schema that never arrives. Worse, with `rsync --delete`, an empty local `migrations/` could wipe the migrations the server already has.
+Earlier versions of this skill removed `migrations/` after install on the theory that "the schema lives in the DB now." That backfired in the deploy flow: `ellev:ssh-deploy update-cms` rsyncs `core/`, `bin/`, AND `migrations/` to the server, then runs `bin/ellev migrate` remotely to apply pending schema changes. Without local migration files, deploys would silently push core changes that depend on schema that never arrives. Worse, with `rsync --delete`, an empty local `migrations/` could wipe the migrations the server already has.
 
 Keeping the folder is the simpler, safer choice. It's a few files of git-tracked SQL/PHP — costs nothing in confusion or disk and removes a whole class of foot-gun.
 
-## Step 7 — Write .nano-version
+## Step 7 — Write .ellev-version
 
 After cleanup succeeds, record what version was just installed. This is the file that future `ellev:upgrade` reads to know "where you are" — it's how the project tracks its Ellev version once `.git/` is gone.
 
 ```bash
 # The version comes from core/VERSION (which the tarball put there).
-# .nano-version is project metadata written by the install/upgrade skills.
+# .ellev-version is project metadata written by the install/upgrade skills.
 INSTALLED_VERSION=$(cat core/VERSION 2>/dev/null || echo "unknown")
 INSTALLED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 SOURCE_REPO="${REPO:-elleven-digital/ellev}"
 
-cat > .nano-version <<EOF
+cat > .ellev-version <<EOF
 {
   "version": "${INSTALLED_VERSION}",
   "installed_at": "${INSTALLED_AT}",
@@ -280,7 +280,7 @@ EOF
 
 The `manifest_url` is a convenience: `ellev:upgrade` can fetch it without re-deriving the URL pattern. Updates to that pattern get recorded with the install — future-proof.
 
-`.nano-version` lives at the project root and **goes along with the project** when deployed via `ellev:ssh-deploy` or downloaded via `ellev:ssh-download`. So any machine that has the project knows what version it's running. (If the user runs `git init` later, they'll likely want to commit this file — it's part of the project's identity, not a secret.)
+`.ellev-version` lives at the project root and **goes along with the project** when deployed via `ellev:ssh-deploy` or downloaded via `ellev:ssh-download`. So any machine that has the project knows what version it's running. (If the user runs `git init` later, they'll likely want to commit this file — it's part of the project's identity, not a secret.)
 
 ## Step 8 — Report success
 
@@ -299,8 +299,8 @@ Cleanup:
   Kept migrations/ — needed when deploying engine updates to remote servers.
 
 Quick actions:
-  ./bin/nano serve 8080          # built-in dev server
-  ./bin/nano migrate:status      # check pending migrations later
+  ./bin/ellev serve 8080          # built-in dev server
+  ./bin/ellev migrate:status      # check pending migrations later
 
 Next steps:
   - Edit .env to set APP_URL, SMTP credentials when needed
@@ -317,10 +317,10 @@ Adjust the login URL based on what the user said about deployment context. If th
 
 - **Tarball download fails (network, 404, etc.)** → show the curl stderr verbatim, abort. Don't leave partial state. If the user passed `--version=` with a non-existent tag, suggest checking https://github.com/elleven-digital/ellev/tags for valid tags.
 - **DB credentials wrong** → catch the FAIL output, re-ask credentials, regenerate `.env`, retry. Don't loop forever — give up after 3 tries and tell the user to debug DB connectivity manually.
-- **User aborts mid-flow (Ctrl+C, says "stop")** → leave whatever's already on disk, tell them they can resume by running `./bin/nano install` directly once `.env` is correct.
+- **User aborts mid-flow (Ctrl+C, says "stop")** → leave whatever's already on disk, tell them they can resume by running `./bin/ellev install` directly once `.env` is correct.
 - **`.env` already exists** → never overwrite without explicit confirmation. Offer to merge new keys into existing file.
-- **`bin/nano` not executable** → `chmod +x bin/nano` (the repo should ship it executable, but some systems strip the bit).
-- **PHP not installed** → don't pre-check (per design), but if `./bin/nano` errors with "command not found" or "PHP version", surface that error to the user with a hint about installing PHP 8.2+.
+- **`bin/ellev` not executable** → `chmod +x bin/ellev` (the repo should ship it executable, but some systems strip the bit).
+- **PHP not installed** → don't pre-check (per design), but if `./bin/ellev` errors with "command not found" or "PHP version", surface that error to the user with a hint about installing PHP 8.2+.
 
 ## Variants
 

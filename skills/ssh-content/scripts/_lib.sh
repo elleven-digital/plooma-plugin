@@ -20,7 +20,7 @@ source "${LIB_DIR}/../../../shared/ssh-lib.sh"
 #   --slug <slug>         slug-or-id (for item updates/get/delete)
 #   --tables <list>       for backup.sh, comma-separated table list
 #   --confirm             explicit confirmation for destructive ops
-#   --dry-run             pass through to bin/nano for validation only
+#   --dry-run             pass through to bin/ellev for validation only
 #   --json-stdin          write.sh reads JSON payload from its OWN stdin
 parse_args() {
     while [[ $# -gt 0 ]]; do

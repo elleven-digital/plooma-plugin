@@ -258,7 +258,7 @@ if [[ "$MODE" == "B" ]]; then
 fi
 echo
 echo "  Test it:"
-echo "    ./bin/nano serve 8080"
+echo "    ./bin/ellev serve 8080"
 echo "    # or use your local web server (Apache/Nginx) pointed at this folder"
 echo
 echo "  Login at ${SITE_LOCAL_URL}/admin/login with your production credentials."

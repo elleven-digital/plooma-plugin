@@ -262,7 +262,7 @@ confirm_phrase() {
 }
 
 # ─────────────────────────────────────────────────────────────────────
-# bin/nano on the remote (ssh-content)
+# bin/ellev on the remote (ssh-content)
 # ─────────────────────────────────────────────────────────────────────
 # Lets sites override which PHP interpreter runs — useful on shared
 # hosts where multiple PHP versions live side-by-side and the default
@@ -273,7 +273,7 @@ resolve_php_bin() {
     echo "${p:-php}"
 }
 
-# cd into the remote project + set PHP_BIN. Caller appends the bin/nano
+# cd into the remote project + set PHP_BIN. Caller appends the bin/ellev
 # subcommand. Matches the way the user runs commands themselves on the
 # server (no absolute paths, no surprises).
 remote_prefix() {
@@ -287,22 +287,22 @@ remote_prefix() {
     echo "cd ${rp} && PHP_BIN='${php_bin}' "
 }
 
-# Runs a bin/nano subcommand on the remote. Returns its stdout (JSON
+# Runs a bin/ellev subcommand on the remote. Returns its stdout (JSON
 # when --format=json was passed).
-# Usage: remote_nano "item:list posts --format=json --status=draft"
-remote_nano() {
+# Usage: remote_ellev "item:list posts --format=json --status=draft"
+remote_ellev() {
     local subcommand="$1"
     local prefix
     prefix=$(remote_prefix)
-    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/nano ${subcommand}"
+    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/ellev ${subcommand}"
 }
 
-# Same as remote_nano but pipes the caller's stdin to the remote
+# Same as remote_ellev but pipes the caller's stdin to the remote
 # command — used for --json-stdin payloads where shell-escaping a JSON
 # literal would be painful.
-remote_nano_stdin() {
+remote_ellev_stdin() {
     local subcommand="$1"
     local prefix
     prefix=$(remote_prefix)
-    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/nano ${subcommand}"
+    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/ellev ${subcommand}"
 }

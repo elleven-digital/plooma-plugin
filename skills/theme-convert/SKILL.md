@@ -15,7 +15,7 @@ By the end:
 - `theme/templates/page-*.php` and `theme/templates/single-*.php` generated with Ellev helpers wired in (`field()`, `option()`, `image_url()`, `get_header()`, `get_footer()`)
 - `theme/partials/header.php` and `theme/partials/footer.php` extracted (or wired up if user already provided them)
 - Assets (CSS, JS, images) moved to `theme/`
-- `./bin/nano page:sync` runs successfully and `./bin/nano schema:validate` reports OK
+- `./bin/ellev page:sync` runs successfully and `./bin/ellev schema:validate` reports OK
 - **Admin pre-populated with the original content**: pages, item type instances (cases, posts, etc.), taxonomy terms, and global options all seeded from what was hardcoded in the source. The user opens admin and sees the same content as the original site — ready to refine, not start from scratch. The site renders correctly at `/` immediately.
 
 The user iterates after by refining the seeded content. The skill's job is the structural conversion + faithful content migration.
@@ -444,8 +444,8 @@ echo "Seed complete.\n";
 After writing all files:
 
 ```bash
-./bin/nano schema:validate
-./bin/nano page:sync
+./bin/ellev schema:validate
+./bin/ellev page:sync
 php theme/install/seed.php
 ```
 
@@ -478,7 +478,7 @@ Tell the user what was generated, with paths. Then list:
 - SEO meta fields are intentionally left empty — user fills `meta_title`, `meta_description`, `og_image` per page when they're ready
 
 **Try it:**
-- `./bin/nano serve 8080` (if dev), or open the configured domain
+- `./bin/ellev serve 8080` (if dev), or open the configured domain
 - `/admin/login` to see all pages and items pre-filled with the migrated content
 
 ## Patterns to keep in mind

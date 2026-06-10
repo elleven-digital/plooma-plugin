@@ -118,7 +118,7 @@ Run `scripts/preflight.sh --config .deploy/ssh.json`. It checks, in order:
 2. **Remote has Ellev** — `ssh <opts> "test -f <remote_path>/core/Bootstrap.php && echo HAS_NANO || echo NO_NANO"`. If NO_NANO, abort with: "Não encontrei Ellev em `<remote_path>` no servidor. O caminho está correto?"
 3. **Remote DB connects** — `ssh <opts> "mysql -u<user> -p<pass> -e 'SELECT 1' <name>"`. Catches typos in DB credentials.
 4. **Local DB connects** — `mysql -u<local-user> -p<local-pass> -e 'SELECT 1'`. If wrong credentials, abort and ask user to fix.
-5. **Local DB user has DROP/CREATE privileges** — try `mysql -e "CREATE DATABASE IF NOT EXISTS __nano_priv_check; DROP DATABASE __nano_priv_check"`. If permission denied, abort.
+5. **Local DB user has DROP/CREATE privileges** — try `mysql -e "CREATE DATABASE IF NOT EXISTS __ellev_priv_check; DROP DATABASE __ellev_priv_check"`. If permission denied, abort.
 
 If any check fails, surface the error verbatim. Don't save a broken config; don't proceed.
 
@@ -223,8 +223,8 @@ Run `scripts/download.sh --config .deploy/ssh.json --mode <A|B>`. The script:
 
 After download:
 
-1. Run `php bin/nano migrate:status` from current dir. Should report "All migrations are up to date" (the dump included the migrations table state).
-2. Optional: print the path to `.env` and remind user to test with `./bin/nano serve 8080` or their local web server.
+1. Run `php bin/ellev migrate:status` from current dir. Should report "All migrations are up to date" (the dump included the migrations table state).
+2. Optional: print the path to `.env` and remind user to test with `./bin/ellev serve 8080` or their local web server.
 
 ## Phase 6 — Report
 
@@ -246,7 +246,7 @@ Backup (Mode B):
     └── local-db.sql       # local DB dump before drop
 
 Test it:
-  ./bin/nano serve 8080
+  ./bin/ellev serve 8080
   # or use your local web server (Apache/Nginx) pointed at this folder
 
 Login at <local_url>/admin/login with the same credentials as production.
@@ -279,7 +279,7 @@ If any guarantee can't be honored, abort with a clear error and leave local stat
 ## Common host gotchas
 
 - **mysqldump not in PATH on remote**: shared hosts often need full path like `/usr/bin/mysqldump`. Test in preflight; fall back to common paths if `mysqldump` alone fails.
-- **PHP not in PATH**: needed for the `php bin/nano migrate:status` verify step. Less critical here than in deploy. If not found, skip verification with a warning.
+- **PHP not in PATH**: needed for the `php bin/ellev migrate:status` verify step. Less critical here than in deploy. If not found, skip verification with a warning.
 - **rsync excluded from jail shell**: rare, but if `rsync` fails to exec, fallback is `tar | ssh | tar -x` (much slower, no resume). Document but don't auto-fallback in v1.
 
 ## Scripts

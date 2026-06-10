@@ -48,8 +48,8 @@ rm -f /tmp/preflight-ssh.err
 # Check 2: Remote has Ellev at the configured path
 # ─────────────────────────────────────────────────────────────────────────────
 log_step "2/5 Remote has Ellev at ${REMOTE_PATH}"
-remote_check=$(eval "$SSH_CMD" "$SSH_TARGET" "test -f '${REMOTE_PATH}/core/Bootstrap.php' && echo HAS_NANO || echo NO_NANO" 2>/dev/null || echo "NO_NANO")
-if [[ "$remote_check" != "HAS_NANO" ]]; then
+remote_check=$(eval "$SSH_CMD" "$SSH_TARGET" "test -f '${REMOTE_PATH}/core/Bootstrap.php' && echo HAS_ELLEV || echo NO_ELLEV" 2>/dev/null || echo "NO_ELLEV")
+if [[ "$remote_check" != "HAS_ELLEV" ]]; then
     log_err "Não encontrei Ellev em ${REMOTE_PATH} no servidor."
     echo "  Verifique o caminho — execute no servidor: ls ${REMOTE_PATH}" >&2
     exit 1
@@ -89,7 +89,7 @@ log_ok "Local DB reachable"
 # Check 5: Local DB user has DROP/CREATE privileges
 # ─────────────────────────────────────────────────────────────────────────────
 log_step "5/5 Local DB user has DROP/CREATE privileges"
-priv_check_db="__nano_priv_check_$$"
+priv_check_db="__ellev_priv_check_$$"
 if ! mysql "${local_mysql_args[@]}" -e "CREATE DATABASE IF NOT EXISTS \`${priv_check_db}\`; DROP DATABASE \`${priv_check_db}\`;" 2>/tmp/preflight-priv.err; then
     log_err "Usuário local '${LOCAL_DB_USER}' não tem privilégios pra DROP/CREATE database."
     echo "  Output do MySQL:" >&2

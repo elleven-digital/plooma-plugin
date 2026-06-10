@@ -64,7 +64,7 @@ ok "Theme files synced"
 
 # --- Validate schema and sync pages ---
 step "Running schema:validate"
-sv_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/nano schema:validate 2>&1" || true)
+sv_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev schema:validate 2>&1" || true)
 echo "$sv_out" | sed 's/^/  /' >&2
 if echo "$sv_out" | grep -qiE "error|invalid|issue"; then
     err "schema:validate reported issues. Fix theme/site.json and re-run."
@@ -73,7 +73,7 @@ fi
 ok "schema OK"
 
 step "Running page:sync"
-ps_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/nano page:sync 2>&1" || true)
+ps_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev page:sync 2>&1" || true)
 echo "$ps_out" | sed 's/^/  /' >&2
 ok "page:sync done"
 
