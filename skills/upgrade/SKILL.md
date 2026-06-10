@@ -1,11 +1,11 @@
 ---
 name: upgrade
-description: Upgrade Nano CMS in an existing project to the latest version (or a specific version) from rickfalaschi/nano-cms. Uses the manifest+tarball model — reads `.nano-version` to know the current version, hits the GitHub tags API for the latest, downloads the tarball, replaces only the engine paths declared in `engine-manifest.json`, runs new migrations, and updates `.nano-version`. Strictly preserves user content (`theme/`, `storage/`, `.env`, the live `.htaccess` and `robots.txt`, `.deploy/`, `.claude/`, and any random files the user added). Does NOT depend on git — works on any machine that has the project, regardless of whether it was originally installed there or downloaded from a server via nano-cms:ssh-download. Use this skill whenever the user wants to update an installed Nano project — phrases like "atualiza o nano cms desse projeto", "puxa o update mais recente do nano", "upgrade nano para a última versão", "tem versão nova do nano-cms?", "rode update do nano aqui", "update the nano-cms engine in this project", "instala a versão v1.2.3 nesse projeto" (if a specific version is wanted, pass --version=vX.Y.Z). Triggers in Portuguese and English. Always operates inside an existing Nano project (must have `core/Bootstrap.php`). Do NOT use for: (a) fresh install — that's nano-cms:install (downloads from scratch), (b) theme conversion — that's nano-cms:theme-convert, (c) running specific CLI commands like `bin/nano migrate` standalone (the user just wants to run the command, not upgrade the engine), (d) editing site.json or content. Mentioning "nano" alone does NOT trigger — only explicit upgrade/update intent does.
+description: Upgrade Ellev (formerly Nano CMS) in an existing project to the latest version (or a specific version) from elleven-digital/ellev. Uses the manifest+tarball model — reads `.nano-version` to know the current version, hits the GitHub tags API for the latest, downloads the tarball, replaces only the engine paths declared in `engine-manifest.json`, runs new migrations, and updates `.nano-version`. Strictly preserves user content (`theme/`, `storage/`, `.env`, the live `.htaccess` and `robots.txt`, `.deploy/`, `.claude/`, and any random files the user added). Does NOT depend on git — works on any machine that has the project, regardless of whether it was originally installed there or downloaded from a server via ellev:ssh-download. Use this skill whenever the user wants to update an installed Ellev project — phrases like "atualiza o nano cms desse projeto", "puxa o update mais recente do nano", "upgrade nano para a última versão", "tem versão nova do nano-cms?", "rode update do nano aqui", "update the nano-cms engine in this project", "instala a versão v1.2.3 nesse projeto" (if a specific version is wanted, pass --version=vX.Y.Z). Triggers in Portuguese and English. Always operates inside an existing Ellev project (must have `core/Bootstrap.php`). Do NOT use for: (a) fresh install — that's ellev:install (downloads from scratch), (b) theme conversion — that's ellev:theme-convert, (c) running specific CLI commands like `bin/nano migrate` standalone (the user just wants to run the command, not upgrade the engine), (d) editing site.json or content. Mentioning "nano" alone does NOT trigger — only explicit upgrade/update intent does.
 ---
 
-# Upgrade Nano CMS in place
+# Upgrade Ellev in place
 
-This skill brings a Nano project up to the latest version (or any specific version) using the manifest+tarball model. It does NOT use git on the user's machine — Nano is treated as a versioned dependency, not a fork.
+This skill brings a Ellev project up to the latest version (or any specific version) using the manifest+tarball model. It does NOT use git on the user's machine — Ellev is treated as a versioned dependency, not a fork.
 
 ## Goal
 
@@ -19,18 +19,18 @@ By the end:
 
 Three things make this skill possible without any persistent git in the project:
 
-1. **`.nano-version`** — a small JSON file at the project root that records the version currently installed. Written by `nano-cms:install` and updated by this skill. Travels with the project (gets deployed via `nano-cms:ssh-deploy`, downloaded back via `nano-cms:ssh-download`).
+1. **`.nano-version`** — a small JSON file at the project root that records the version currently installed. Written by `ellev:install` and updated by this skill. Travels with the project (gets deployed via `ellev:ssh-deploy`, downloaded back via `ellev:ssh-download`).
 
-2. **GitHub tags API** — `https://api.github.com/repos/rickfalaschi/nano-cms/tags` lists all release tags. The first item is the most recent. Comparison is just strings.
+2. **GitHub tags API** — `https://api.github.com/repos/elleven-digital/ellev/tags` lists all release tags. The first item is the most recent. Comparison is just strings.
 
-3. **Release tarballs** — `https://github.com/rickfalaschi/nano-cms/archive/refs/tags/<tag>.tar.gz` is a static URL that GitHub serves for any tag. We download, extract, and selectively copy the engine paths.
+3. **Release tarballs** — `https://github.com/elleven-digital/ellev/archive/refs/tags/<tag>.tar.gz` is a static URL that GitHub serves for any tag. We download, extract, and selectively copy the engine paths.
 
 Combined, these three give us "what version am I", "what version exists", and "how do I get that version's files" — all without git on the user's machine.
 
 ## Behavior overview
 
 ```
-0. Pre-flight  — verify project is a Nano install
+0. Pre-flight  — verify project is a Ellev install
 1. Detect      — read .nano-version (or migrate from legacy .git/ install)
 2. Resolve     — fetch latest version (or use --version=X if specified)
 3. Compare     — if already current, exit cleanly
@@ -45,7 +45,7 @@ Combined, these three give us "what version am I", "what version exists", and "h
 
 ## Phase 0 — Pre-flight check
 
-1. **Confirm we're in a Nano install.** Check for `core/Bootstrap.php` and `bin/nano`. If missing, abort with: "Não detectei uma instalação do Nano aqui (faltam `core/Bootstrap.php` e/ou `bin/nano`). Use a skill `nano-cms:install` para uma instalação nova."
+1. **Confirm we're in a Ellev install.** Check for `core/Bootstrap.php` and `bin/nano`. If missing, abort with: "Não detectei uma instalação do Ellev aqui (faltam `core/Bootstrap.php` e/ou `bin/nano`). Use a skill `ellev:install` para uma instalação nova."
 
 2. **Confirm the system has required tools**: `curl`, `tar`, `jq`, `rsync`. These are standard on macOS/Linux. If missing, tell the user to install them.
 
@@ -59,7 +59,7 @@ Read it:
 
 ```bash
 CURRENT=$(jq -r '.version' .nano-version)
-SOURCE_REPO=$(jq -r '.source_repo // "rickfalaschi/nano-cms"' .nano-version)
+SOURCE_REPO=$(jq -r '.source_repo // "elleven-digital/ellev"' .nano-version)
 ```
 
 Easy path. Continue to Phase 2.
@@ -68,7 +68,7 @@ Easy path. Continue to Phase 2.
 
 This is a project installed before the manifest+tarball model. Two sub-cases:
 
-- **`core/VERSION` exists** (manifest-aware Nano, just no `.nano-version` yet because user installed pre-skill update): derive version from `core/VERSION`. Offer to migrate:
+- **`core/VERSION` exists** (manifest-aware Ellev, just no `.nano-version` yet because user installed pre-skill update): derive version from `core/VERSION`. Offer to migrate:
 
   > "Detectei uma instalação legada — tem `.git/` mas não `.nano-version`. A versão atual (de `core/VERSION`) é `<X>`. Posso migrar pro modelo novo (escrever `.nano-version`, remover `.git/`) e seguir com o upgrade? `(y/N)`"
 
@@ -76,7 +76,7 @@ This is a project installed before the manifest+tarball model. Two sub-cases:
 
 - **`core/VERSION` doesn't exist** (very old install, pre-v1.0.0): we can't determine the exact starting version, but we CAN still upgrade — by treating it as "version unknown, upgrade to latest". The manifest+tarball flow does the right thing here: engine_paths get overwritten from the new tarball, user content is preserved per the manifest. Offer:
 
-  > "Esta instalação é anterior ao versionamento do Nano (não tem `core/VERSION`). Posso fazer um upgrade direto pra `<latest>` mesmo assim — vou:
+  > "Esta instalação é anterior ao versionamento do Ellev (não tem `core/VERSION`). Posso fazer um upgrade direto pra `<latest>` mesmo assim — vou:
   >   - Tratar como 'version unknown' → atualiza pra latest
   >   - Substituir os engine_paths do manifest novo (`core/`, `bin/`, `migrations/`, `index.php`, etc.)
   >   - Preservar `theme/`, `storage/`, `.env`, `.htaccess`, `robots.txt`, `.deploy/`, `.claude/`
@@ -89,7 +89,7 @@ This is a project installed before the manifest+tarball model. Two sub-cases:
 
 ### State C — Neither `.nano-version` nor `.git/` (orphan project)
 
-Project came via something other than `nano-cms:install` (e.g., copied from somewhere, downloaded as zip). It IS a Nano install (passed Phase 0) but has no version metadata.
+Project came via something other than `ellev:install` (e.g., copied from somewhere, downloaded as zip). It IS a Ellev install (passed Phase 0) but has no version metadata.
 
 Same approach as State B sub-case "very old" — offer to upgrade-as-if-unknown. The same warning about engine_paths customizations applies. Difference: no `.git/` to remove.
 
@@ -103,7 +103,7 @@ When migrating a legacy/orphan project, after determining "treat as unknown → 
 
 3. **After Phase 9 (only for State B with `.git/`):** `rm -rf .git/`. Tell the user this happened.
 
-This unblocks the most common real-world scenario: someone has a Nano project installed before v1.0.0 (the first versioned release) and wants the latest engine + new features.
+This unblocks the most common real-world scenario: someone has a Ellev project installed before v1.0.0 (the first versioned release) and wants the latest engine + new features.
 
 ## Phase 2 — Resolve target version
 
@@ -126,7 +126,7 @@ curl -fsLI -o /dev/null \
 
 ```bash
 if [[ "$CURRENT" == "$TARGET" ]]; then
-    echo "Nano já está em $CURRENT. Nada a atualizar."
+    echo "Ellev já está em $CURRENT. Nada a atualizar."
     exit 0
 fi
 ```
@@ -243,16 +243,16 @@ done
 
 ### 8b. Conditional `.example` template cleanup
 
-`nano-cms:install` removes `.htaccess.example` and `robots.txt.example` from a fresh install once their live counterparts (`.htaccess`, `robots.txt`) exist. The upgrade flow has to mirror that — otherwise every upgrade re-introduces those `.example` files (they're in `engine_paths` so the tarball brings them back) and the project accumulates dead-weight templates over time.
+`ellev:install` removes `.htaccess.example` and `robots.txt.example` from a fresh install once their live counterparts (`.htaccess`, `robots.txt`) exist. The upgrade flow has to mirror that — otherwise every upgrade re-introduces those `.example` files (they're in `engine_paths` so the tarball brings them back) and the project accumulates dead-weight templates over time.
 
-The "only remove if live counterpart exists" guard is the same as `nano-cms:install`: never leave the project with neither the template nor the live config.
+The "only remove if live counterpart exists" guard is the same as `ellev:install`: never leave the project with neither the template nor the live config.
 
 ```bash
 [ -f .htaccess ] && rm -f .htaccess.example
 [ -f robots.txt ] && rm -f robots.txt.example
 ```
 
-Note: `nginx.conf.example` is handled unconditionally by Phase 8a via the manifest's `post_install_cleanup` array — Nano is officially Apache-only, so the nginx template gets removed on every upgrade just like on a fresh install. No extra logic needed here.
+Note: `nginx.conf.example` is handled unconditionally by Phase 8a via the manifest's `post_install_cleanup` array — Ellev is officially Apache-only, so the nginx template gets removed on every upgrade just like on a fresh install. No extra logic needed here.
 
 ## Phase 9 — Mark new version
 
@@ -283,7 +283,7 @@ rm -rf "$TMPDIR"
 ## Phase 10 — Report
 
 ```
-✓ Nano CMS atualizado.
+✓ Ellev atualizado.
 
   De:  v1.4.2
   Pra: v1.5.0  (3 commits)
@@ -295,7 +295,7 @@ rm -rf "$TMPDIR"
   Próximo:
     - Teste o site: abra / e /admin/login
     - Se algo quebrou: rollback é simples, rode:
-        nano-cms:upgrade --version=v1.4.2
+        ellev:upgrade --version=v1.4.2
       (engine volta; seu DB e conteúdo seguem intactos)
 ```
 

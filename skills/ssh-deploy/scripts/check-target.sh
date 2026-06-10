@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inspect the remote target for an existing Nano install.
+# Inspect the remote target for an existing Ellev install.
 # Prints "EXISTS" or "EMPTY" to stdout (consumable). Logs progress to stderr.
 # Exits 0 on either result, non-zero only on SSH/auth failure.
 
@@ -21,16 +21,16 @@ if ! "${ssh_args[@]}" -o ConnectTimeout=10 "echo OK" >/dev/null 2>&1; then
 fi
 ok "SSH OK"
 
-# Check for the canonical Nano marker file.
+# Check for the canonical Ellev marker file.
 result=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>/dev/null || echo "ERROR")
 
 case "$result" in
     EXISTS)
-        ok "Nano detected at ${remote_path}"
+        ok "Ellev detected at ${remote_path}"
         echo "EXISTS"
         ;;
     EMPTY)
-        ok "Target is empty (no Nano install)"
+        ok "Target is empty (no Ellev install)"
         echo "EMPTY"
         ;;
     *)

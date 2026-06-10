@@ -1,13 +1,13 @@
 ---
 name: ssh-deploy
-description: Deploy Nano CMS to ANY host with SSH access via three actions — (1) `init` for first-time deploy of a complete Nano project (files + database + storage + theme + robots.txt with the correct production URL); (2) `update-cms` for pushing core/Nano changes and running pending DB migrations remotely; (3) `update-theme` for pushing theme-only changes and running schema:validate + page:sync remotely. Works on Hostinger, cPanel-based hosts (Locaweb, HostGator, KingHost, A2, SiteGround, Bluehost), DreamHost, VPS providers (DigitalOcean, Linode, Hetzner, Vultr), cloud VMs (AWS Lightsail/EC2, GCP, Azure) — anywhere with SSH + key auth + MySQL/MariaDB. ALWAYS inspects the target hosting path FIRST and refuses to overwrite an existing Nano install — if `core/Bootstrap.php` is present at the target, only `update-cms` and `update-theme` are offered. On first run asks the user for SSH credentials, the absolute remote path where Nano will live, the canonical site URL, and DB credentials, then saves them to `.deploy/ssh.json` (chmod 0600, gitignored) so subsequent deploys are fully automated. Use this skill whenever the user wants to push, deploy, ship, send, upload, or sincronizar their Nano project to a remote server — phrases like "sobe esse projeto na hostinger", "deploy do nano", "publica na locaweb", "atualiza o tema em prod", "push do cms", "send to my VPS", "publish nano", "sobe pro DigitalOcean", "deploy nano via ssh". Triggers in Portuguese and English. Do NOT trigger for: deploys to PaaS without SSH (Vercel/Netlify/Heroku/Cloud Run), creating a Nano install from scratch (that's nano-cms:install), converting templates to a Nano theme (that's nano-cms:theme-convert), or local-only Nano work (editing site.json, running migrations locally). The signal is "Nano" + a deploy verb (deploy/sobe/atualiza/push/publish) targeting a server reachable by SSH.
+description: Deploy Ellev (formerly Nano CMS) to ANY host with SSH access via three actions — (1) `init` for first-time deploy of a complete Ellev project (files + database + storage + theme + robots.txt with the correct production URL); (2) `update-cms` for pushing core/Ellev changes and running pending DB migrations remotely; (3) `update-theme` for pushing theme-only changes and running schema:validate + page:sync remotely. Works on Hostinger, cPanel-based hosts (Locaweb, HostGator, KingHost, A2, SiteGround, Bluehost), DreamHost, VPS providers (DigitalOcean, Linode, Hetzner, Vultr), cloud VMs (AWS Lightsail/EC2, GCP, Azure) — anywhere with SSH + key auth + MySQL/MariaDB. ALWAYS inspects the target hosting path FIRST and refuses to overwrite an existing Ellev install — if `core/Bootstrap.php` is present at the target, only `update-cms` and `update-theme` are offered. On first run asks the user for SSH credentials, the absolute remote path where Ellev will live, the canonical site URL, and DB credentials, then saves them to `.deploy/ssh.json` (chmod 0600, gitignored) so subsequent deploys are fully automated. Use this skill whenever the user wants to push, deploy, ship, send, upload, or sincronizar their Ellev project to a remote server — phrases like "sobe esse projeto na hostinger", "deploy do nano", "publica na locaweb", "atualiza o tema em prod", "push do cms", "send to my VPS", "publish nano", "sobe pro DigitalOcean", "deploy nano via ssh". Triggers in Portuguese and English. Do NOT trigger for: deploys to PaaS without SSH (Vercel/Netlify/Heroku/Cloud Run), creating a Ellev install from scratch (that's ellev:install), converting templates to a Ellev theme (that's ellev:theme-convert), or local-only Ellev work (editing site.json, running migrations locally). The signal is "Ellev" + a deploy verb (deploy/sobe/atualiza/push/publish) targeting a server reachable by SSH.
 ---
 
-# Deploy Nano CMS via SSH
+# Deploy Ellev via SSH
 
 Three actions: **init**, **update-cms**, **update-theme**. Each maps to a script in `scripts/`. Your job is to:
 
-1. Detect what state the deploy is in (first time? config exists? Nano already on remote?)
+1. Detect what state the deploy is in (first time? config exists? Ellev already on remote?)
 2. Pick the right action, or ask the user when it's ambiguous
 3. Run the right script with the right config
 4. Report the outcome
@@ -16,10 +16,10 @@ The skill is **host-agnostic**: works on Hostinger, cPanel-based shared hosts, D
 
 ## Why these 3 actions and not more
 
-A Nano deploy has two "halves" that change at different cadences:
+A Ellev deploy has two "halves" that change at different cadences:
 
 - **Schema/structure** lives in `theme/site.json` + `theme/templates/` + `theme/partials/` + assets. Editor changes this when the design or fields change. Touching it requires re-running `page:sync` so admin reflects new fields.
-- **Engine** lives in `core/`, `bin/`, `migrations/`, plus root files (`index.php`, `.htaccess.example`, `robots.txt.example`). Changes when Nano core is upgraded or new migrations land. Touching it requires running `migrate`. Nano uses a flat layout — `index.php` is at the project root, not inside a `public/` subdir.
+- **Engine** lives in `core/`, `bin/`, `migrations/`, plus root files (`index.php`, `.htaccess.example`, `robots.txt.example`). Changes when Ellev core is upgraded or new migrations land. Touching it requires running `migrate`. Ellev uses a flat layout — `index.php` is at the project root, not inside a `public/` subdir.
 
 Real production data — items the editor created, form submissions, uploaded media — lives in the remote DB and `storage/uploads/`. Deploys must NEVER overwrite either, because that's the user's working state, not yours.
 
@@ -27,9 +27,9 @@ The 3 actions split along those lines:
 
 | Action | What it touches remotely | Refuses if |
 |---|---|---|
-| `init` | Everything: files + DB import + storage + .env + robots.txt | Nano already exists at target |
-| `update-cms` | `core/`, `bin/`, `migrations/` + root engine files (`index.php`, `.htaccess.example`, `robots.txt.example`). Runs `migrate` after | Nano does NOT exist at target |
-| `update-theme` | `theme/` only (excluding `theme/install/`, `storage/uploads/`, `.env`). Runs `schema:validate` + `page:sync` after | Nano does NOT exist at target |
+| `init` | Everything: files + DB import + storage + .env + robots.txt | Ellev already exists at target |
+| `update-cms` | `core/`, `bin/`, `migrations/` + root engine files (`index.php`, `.htaccess.example`, `robots.txt.example`). Runs `migrate` after | Ellev does NOT exist at target |
+| `update-theme` | `theme/` only (excluding `theme/install/`, `storage/uploads/`, `.env`). Runs `schema:validate` + `page:sync` after | Ellev does NOT exist at target |
 
 `storage/uploads/`, `.env`, and the live DB are **never** overwritten after init.
 
@@ -46,13 +46,13 @@ config exists? ── no ──▶ first-time setup (Phase 1)
        ▼
 target state ── EMPTY ──▶ offer init (Phase 3)
                           (or update-* if user explicitly asks
-                           and explains they expect Nano elsewhere)
+                           and explains they expect Ellev elsewhere)
        │
       EXISTS
        │
        ▼
 offer update-cms / update-theme. Refuse init.
-Tell user clearly: "Nano já existe em <path>.
+Tell user clearly: "Ellev já existe em <path>.
 init sobrescreveria o site em produção — bloqueado.
 Posso rodar update-cms ou update-theme."
 ```
@@ -73,7 +73,7 @@ Ask in one batch — most can be defaulted:
 
 If the user doesn't know whether SSH is available, point them to their host's panel (cPanel → SSH Access, hPanel → Advanced → SSH Access, etc.). Most shared plans Premium and up support SSH; basic plans usually don't. VPS/cloud always do.
 
-**Remote path** — `ssh.remote_path` is the absolute path on the server where Nano will live. This is THE most important field, and it varies by host:
+**Remote path** — `ssh.remote_path` is the absolute path on the server where Ellev will live. This is THE most important field, and it varies by host:
 
 | Host type | Typical `ssh.remote_path` |
 |---|---|
@@ -89,11 +89,11 @@ If the user doesn't know, ask them to SSH in and run `pwd` from their web root d
 
 **Site URL and subpath** — what users will see in the browser:
 - `site.url` — final canonical URL with scheme (used in `APP_URL`, sitemap, robots.txt). Examples: `https://expmark.com.br`, `https://example.com/blog`.
-- `site.subpath` — only set if the site lives under a subpath, e.g. `/blog`. **This affects Nano's `APP_BASE_PATH` env var** — the skill writes it to `.env` automatically. Empty string means root domain.
+- `site.subpath` — only set if the site lives under a subpath, e.g. `/blog`. **This affects Ellev's `APP_BASE_PATH` env var** — the skill writes it to `.env` automatically. Empty string means root domain.
 
 The subpath and `remote_path` are independent: a site at `https://example.com/blog/` might live at `/var/www/blog/` (no `blog` in the path) or at `/home/user/public_html/blog/` (subpath in the path). Don't try to derive one from the other.
 
-**Database** (must be already created on the remote — Nano CMS can't create databases, the user does it via host panel or `mysql` CLI):
+**Database** (must be already created on the remote — Ellev can't create databases, the user does it via host panel or `mysql` CLI):
 - `db.name`, `db.user`, `db.password` — exactly as the host panel created them. Some hosts prefix names/users (Hostinger: `u12345678_expmark` / `u12345678_admin`). cPanel similar. VPS: whatever the user created.
 - `db.host` defaults to `localhost` (same machine as SSH). Override if the host has a separate DB server.
 
@@ -177,12 +177,12 @@ When in doubt, ask. Better to confirm than to overwrite the wrong thing.
 
 Run `scripts/init.sh --config .deploy/ssh.json`. It:
 
-1. Re-checks target is empty (refuses if Nano exists)
+1. Re-checks target is empty (refuses if Ellev exists)
 2. Dumps local DB to `/tmp/nano-init-<timestamp>.sql`
 3. `rsync -avz --delete-after` of project files to remote, **excluding**:
    - `.env`, `.git/`, `.deploy/`, `node_modules/`
    - `storage/cache/*`, `storage/logs/*`
-   - `theme/` legacy source files (anything matching `theme/*.php` directly in theme root, not in `theme/templates/` etc — these are leftovers from `nano-cms:theme-convert`)
+   - `theme/` legacy source files (anything matching `theme/*.php` directly in theme root, not in `theme/templates/` etc — these are leftovers from `ellev:theme-convert`)
 4. Generates remote `.env` from config (`APP_URL`, `APP_BASE_PATH`, `DB_*`, etc.) — **not committing** anything from local `.env`
 5. Uploads SQL dump and runs `mysql < dump.sql` on remote → cleans up the dump
 6. Runs on remote: `php bin/nano migrate` (just in case the dump didn't include the migration log table state)
@@ -196,8 +196,8 @@ Print final URL + admin login URL on success.
 
 Run `scripts/update-cms.sh --config .deploy/ssh.json`. It:
 
-1. Verifies Nano exists at target (refuses if EMPTY)
-2. `rsync -avz` (with per-subtree `--delete`) of `core/`, `bin/`, `migrations/` + Nano-shipped root files (`index.php`, `.htaccess.example`, `robots.txt.example`) — **not** theme, storage, .env, live `.htaccess`, live `robots.txt`
+1. Verifies Ellev exists at target (refuses if EMPTY)
+2. `rsync -avz` (with per-subtree `--delete`) of `core/`, `bin/`, `migrations/` + Ellev-shipped root files (`index.php`, `.htaccess.example`, `robots.txt.example`) — **not** theme, storage, .env, live `.htaccess`, live `robots.txt`
 3. Runs on remote: `php bin/nano migrate` to apply any pending migrations from the new files
 4. Verifies the homepage still returns 200
 
@@ -207,7 +207,7 @@ Doesn't touch `theme/`, `storage/uploads/`, or `.env`. The live DB schema gets u
 
 Run `scripts/update-theme.sh --config .deploy/ssh.json`. It:
 
-1. Verifies Nano exists at target (refuses if EMPTY)
+1. Verifies Ellev exists at target (refuses if EMPTY)
 2. `rsync -avz` (no `--delete`) of `theme/` only, with **excludes**:
    - `theme/install/seed.php` (already ran on init — re-running would be guarded by idempotency but no need to ship it)
    - `storage/uploads/*` (lives outside theme but worth listing for clarity)
@@ -240,7 +240,7 @@ If something failed, show the failing step and what the user should check. Don't
 
 The skill never:
 
-- Runs `init` against an existing Nano install
+- Runs `init` against an existing Ellev install
 - Uses `--delete` on rsync targets that contain `storage/uploads/` (after init)
 - Writes anything to remote `.env` except during init
 - Overwrites the live remote DB (only init imports the dump, and only after target-empty check)
@@ -275,7 +275,7 @@ The actual deploy logic lives in `scripts/`. Each script:
 |---|---|
 | `check-target.sh` | SSH + check if `<remote_path>/core/Bootstrap.php` exists. Prints `EXISTS` or `EMPTY`. Use before any other script. |
 | `preflight.sh` | Full check: SSH connectivity + DB connectivity + target state. Use during first-time setup validation. |
-| `init.sh` | Full init deploy. Refuses if target has Nano. |
+| `init.sh` | Full init deploy. Refuses if target has Ellev. |
 | `update-cms.sh` | core/, bin/, migrations/ rsync + root engine files + `migrate`. Refuses if target empty. |
 | `update-theme.sh` | Theme rsync + `schema:validate` + `page:sync`. Refuses if target empty. |
 
@@ -285,7 +285,7 @@ Read the scripts to understand exactly what they do before invoking. They're the
 
 Never:
 
-- Skip the target inspection (Phase 0). Even if the user is sure Nano isn't there, check. The cost is one SSH command; the benefit is preventing a wipe.
+- Skip the target inspection (Phase 0). Even if the user is sure Ellev isn't there, check. The cost is one SSH command; the benefit is preventing a wipe.
 - Run multiple actions in parallel against the same target — they're not safe to interleave.
 - Modify `.deploy/ssh.json` without explicit consent. If a credential is wrong, ask the user; don't silently update.
 - Push beyond what the user asked. If they say "atualiza o tema", do `update-theme` and stop. Don't also run `update-cms`.

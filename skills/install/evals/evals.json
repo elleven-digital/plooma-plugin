@@ -4,14 +4,14 @@
     {
       "id": 1,
       "name": "happy-path-empty-folder",
-      "prompt": "Instala o Nano CMS nessa pasta. Use o MySQL local (host localhost, port 3306, user root, senha vazia). Crie um banco chamado 'nano_eval_1'. O admin inicial deve ser 'admin@test.local' com senha 'admin12345' e nome 'Admin Teste'. Não precisa configurar APP_URL nem SMTP agora.",
+      "prompt": "Instala o Ellev nessa pasta. Use o MySQL local (host localhost, port 3306, user root, senha vazia). Crie um banco chamado 'nano_eval_1'. O admin inicial deve ser 'admin@test.local' com senha 'admin12345' e nome 'Admin Teste'. Não precisa configurar APP_URL nem SMTP agora.",
       "expected_output": "Repo clonado, .env preenchido com as credenciais informadas, bin/nano install rodou com sucesso, login funciona em /admin/login. Pasta atual contém core/, public/, bin/, theme/, .htaccess, public/robots.txt, public/.htaccess.",
       "files": []
     },
     {
       "id": 2,
       "name": "folder-with-existing-files",
-      "prompt": "Quero instalar o Nano aqui. Já tenho um arquivo README.md meu na pasta que NÃO deve ser apagado. DB local: 'nano_eval_2' no MySQL (root, sem senha). Admin: 'eu@example.com' / 'senha123' / 'Eu'.",
+      "prompt": "Quero instalar o Ellev aqui. Já tenho um arquivo README.md meu na pasta que NÃO deve ser apagado. DB local: 'nano_eval_2' no MySQL (root, sem senha). Admin: 'eu@example.com' / 'senha123' / 'Eu'.",
       "expected_output": "Skill detecta o README.md existente, pergunta antes de continuar, e ao confirmar usa estratégia temp-clone-then-copy preservando o README.md. Install completa normalmente.",
       "files": [
         {
@@ -23,12 +23,12 @@
     {
       "id": 3,
       "name": "abort-existing-install",
-      "prompt": "Set up Nano CMS in this folder.",
+      "prompt": "Set up Ellev in this folder.",
       "expected_output": "Skill detecta core/Bootstrap.php pré-existente, NÃO sobrescreve, oferece as 3 opções (abort/wipe/migrate-only) e aguarda decisão do usuário. Não roda nem clone nem install sem confirmação explícita.",
       "files": [
         {
           "name": "core/Bootstrap.php",
-          "content": "<?php\n// Fake pre-existing Nano installation\nnamespace Nano;\n"
+          "content": "<?php\n// Fake pre-existing Ellev installation\nnamespace Ellev;\n"
         },
         {
           "name": "bin/nano",

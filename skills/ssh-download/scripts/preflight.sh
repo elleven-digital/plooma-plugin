@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preflight checks for nano-cms:ssh-download.
+# Preflight checks for ellev:ssh-download.
 #
 # Validates everything that must be true before the destructive download
 # operation runs. Exits 0 if all good, non-zero otherwise (with the failing
@@ -45,16 +45,16 @@ log_ok "SSH connects"
 rm -f /tmp/preflight-ssh.err
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Check 2: Remote has Nano at the configured path
+# Check 2: Remote has Ellev at the configured path
 # ─────────────────────────────────────────────────────────────────────────────
-log_step "2/5 Remote has Nano at ${REMOTE_PATH}"
+log_step "2/5 Remote has Ellev at ${REMOTE_PATH}"
 remote_check=$(eval "$SSH_CMD" "$SSH_TARGET" "test -f '${REMOTE_PATH}/core/Bootstrap.php' && echo HAS_NANO || echo NO_NANO" 2>/dev/null || echo "NO_NANO")
 if [[ "$remote_check" != "HAS_NANO" ]]; then
-    log_err "Não encontrei Nano em ${REMOTE_PATH} no servidor."
+    log_err "Não encontrei Ellev em ${REMOTE_PATH} no servidor."
     echo "  Verifique o caminho — execute no servidor: ls ${REMOTE_PATH}" >&2
     exit 1
 fi
-log_ok "Nano found at ${REMOTE_PATH}"
+log_ok "Ellev found at ${REMOTE_PATH}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Check 3: Remote DB is accessible

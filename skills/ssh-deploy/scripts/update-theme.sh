@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Update Nano theme on remote: rsync theme/ (excluding install/, uploads, .env)
+# Update Ellev theme on remote: rsync theme/ (excluding install/, uploads, .env)
 # and run `schema:validate` + `page:sync`.
-# Refuses if Nano isn't already installed at target.
+# Refuses if Ellev isn't already installed at target.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=_lib.sh
@@ -19,11 +19,11 @@ step "update-theme → ${ssh_target}:${remote_path}"
 # --- Refuse if target is empty ---
 state=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>&1)
 if [[ "$state" != "EXISTS" ]]; then
-    err "Nano não detectado em ${remote_path}."
+    err "Ellev não detectado em ${remote_path}."
     err "update-theme só roda em instalações existentes. Use init.sh para o primeiro deploy."
     exit 1
 fi
-ok "Nano detected — proceeding"
+ok "Ellev detected — proceeding"
 
 # --- Rsync theme/ only ---
 if [[ ! -d "./theme" ]]; then
@@ -38,7 +38,7 @@ rsync_dest=$(rsync_target_for "$remote_path")
 #   install/seed.php  — already ran on init, no need to re-ship
 #   theme/storage/    — uploads live there in some setups; never overwrite
 #   *.bak, .DS_Store  — local cruft
-#   theme/*.php       — legacy nano-cms:theme-convert leftover files at theme root
+#   theme/*.php       — legacy ellev:theme-convert leftover files at theme root
 excludes=(
     --exclude='install/seed.php'
     --exclude='storage/'

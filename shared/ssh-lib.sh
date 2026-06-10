@@ -199,7 +199,7 @@ remote_path() {
     local path
     path=$(cfg_get '.ssh.remote_path')
     if [[ -z "$path" ]]; then
-        die "ssh.remote_path is required in config — absolute path on the remote host where Nano lives (e.g. /var/www/site, /home/user/public_html, /home/u123/domains/site.com/public_html)"
+        die "ssh.remote_path is required in config — absolute path on the remote host where Ellev lives (e.g. /var/www/site, /home/user/public_html, /home/u123/domains/site.com/public_html)"
     fi
     # Strip trailing slash for consistent concatenation.
     echo "${path%/}"
@@ -266,7 +266,7 @@ confirm_phrase() {
 # ─────────────────────────────────────────────────────────────────────
 # Lets sites override which PHP interpreter runs — useful on shared
 # hosts where multiple PHP versions live side-by-side and the default
-# `php` in PATH isn't the one Nano expects.
+# `php` in PATH isn't the one Ellev expects.
 resolve_php_bin() {
     local p
     p=$(cfg_get '.remote.php_bin')

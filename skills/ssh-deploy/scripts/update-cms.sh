@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Update Nano core/engine on remote: rsync core/, public/, bin/, migrations/
+# Update Ellev core/engine on remote: rsync core/, public/, bin/, migrations/
 # (NOT theme, NOT storage, NOT .env), then run `php bin/nano migrate`.
-# Refuses if Nano isn't already installed at target.
+# Refuses if Ellev isn't already installed at target.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=_lib.sh
@@ -19,11 +19,11 @@ step "update-cms → ${ssh_target}:${remote_path}"
 # --- Refuse if target is empty ---
 state=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>&1)
 if [[ "$state" != "EXISTS" ]]; then
-    err "Nano não detectado em ${remote_path}."
+    err "Ellev não detectado em ${remote_path}."
     err "update-cms só roda em instalações existentes. Use init.sh para o primeiro deploy."
     exit 1
 fi
-ok "Nano detected — proceeding"
+ok "Ellev detected — proceeding"
 
 # --- Refuse if local migrations/ is missing ---
 # update-cms ships engine code AND the migrations that go with it. If the
@@ -37,11 +37,11 @@ if [[ ! -d "./migrations" ]]; then
     err "This script needs to push the migrations alongside core/ to keep"
     err "the server's DB schema in sync with the engine code being deployed."
     err ""
-    err "If you have an older Nano install where the install/upgrade skill"
+    err "If you have an older Ellev install where the install/upgrade skill"
     err "deleted migrations/ after running them, restore the folder:"
     err "  git checkout HEAD -- migrations/"
     err ""
-    err "Or run nano-cms:upgrade — current versions of that skill keep"
+    err "Or run ellev:upgrade — current versions of that skill keep"
     err "migrations/ in place so this script always has what it needs."
     exit 1
 fi
@@ -50,7 +50,7 @@ fi
 # Flat layout: engine lives in core/, bin/, migrations/ subdirs PLUS index.php
 # at the root. We rsync each subdir with --delete scoped to itself (safe —
 # theme/ and storage/ are at root, untouched). We separately rsync the
-# Nano-shipped root files: index.php (entry), .htaccess.example +
+# Ellev-shipped root files: index.php (entry), .htaccess.example +
 # robots.txt.example (templates). Live .htaccess and robots.txt are
 # user-customized and intentionally not synced.
 step "Syncing engine dirs and root files"
@@ -82,7 +82,7 @@ fi
 ok "Engine synced"
 
 # CRITICAL: live .htaccess, robots.txt, .env, theme/, storage/ are NOT touched.
-# If Nano core ships a new .htaccess.example, the user can manually merge
+# If Ellev core ships a new .htaccess.example, the user can manually merge
 # changes into their live .htaccess (they're gitignored — not auto-synced).
 
 # --- Run migrations ---

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # First-time deploy: rsync project + dump+restore DB + generate prod .env +
 # write robots.txt + create top-level shim/.htaccess so Hostinger serves
-# Nano correctly without needing a custom DocumentRoot.
+# Ellev correctly without needing a custom DocumentRoot.
 #
-# Hard guarantee: refuses if Nano already exists at target. There is no --force.
+# Hard guarantee: refuses if Ellev already exists at target. There is no --force.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=_lib.sh
@@ -16,10 +16,10 @@ remote_path=$(remote_base_path)
 
 step "init deploy → ${ssh_target}:${remote_path}"
 
-# --- 1) Refuse if Nano already exists ---
+# --- 1) Refuse if Ellev already exists ---
 state=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>&1)
 if [[ "$state" == "EXISTS" ]]; then
-    err "Nano já está instalado em ${remote_path}."
+    err "Ellev já está instalado em ${remote_path}."
     err "init sobrescreveria o site em produção (DB + arquivos) — bloqueado."
     err "Para alterações, use update-cms.sh ou update-theme.sh."
     err "Se você realmente quer recomeçar do zero, apague o conteúdo de ${remote_path} manualmente primeiro."
@@ -74,7 +74,7 @@ excludes=(
     --exclude=storage/logs/*
     --exclude=*.bak
     --exclude=*.swp
-    # legacy nano-cms:theme-convert leftovers (top-level theme PHPs)
+    # legacy ellev:theme-convert leftovers (top-level theme PHPs)
     --exclude=theme/*.php
     --exclude=theme/includes/
 )
@@ -176,7 +176,7 @@ echo "$mig_out" | sed 's/^/  /' >&2
 ok "Migrations OK"
 
 # --- 8) Overwrite robots.txt with prod sitemap URL ---
-# Nano's flat layout puts robots.txt at the project root. The rsync above
+# Ellev's flat layout puts robots.txt at the project root. The rsync above
 # already shipped a robots.txt (copied by Installer from robots.txt.example)
 # but it points at example.com — overwrite with the real APP_URL.
 step "Writing robots.txt with production sitemap URL"
@@ -202,9 +202,9 @@ fi
 rm -f "$robots_tmp"
 ok "robots.txt written with Sitemap: ${app_url}/sitemap.xml"
 
-# Note: no top-level shim needed. Nano's flat layout puts index.php and
+# Note: no top-level shim needed. Ellev's flat layout puts index.php and
 # .htaccess at the project root already (rsynced from local), so Apache
-# serves them directly. The .htaccess shipped with Nano blocks core/, bin/,
+# serves them directly. The .htaccess shipped with Ellev blocks core/, bin/,
 # migrations/, theme/*.php, .env, etc.
 
 # --- 9) Verify with curl ---

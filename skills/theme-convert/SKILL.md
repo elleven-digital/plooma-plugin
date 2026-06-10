@@ -1,18 +1,18 @@
 ---
 name: theme-convert
-description: Convert a folder of static HTML/PHP templates into a Nano CMS theme. Reads pages in the current directory, extracts shared header/footer into partials, identifies editable fields (titles, hero copy, images, repeating blocks), proposes a `site.json` schema with pages and item types, then generates Nano-compatible PHP templates with `field()`, `option()`, `image_url()`, and other Nano helpers wired in. Also pre-populates the admin panel with the same content that was hardcoded in the source — pages, items, taxonomy terms, and global options — via a one-shot seed script, so the user opens admin to a populated site, not empty fields. If the current directory is NOT inside an existing Nano install, this skill creates `./theme/`, moves the source files there, then auto-installs Nano (delegates to nano-cms:install) before doing the conversion. Use this skill whenever the user has static HTML/PHP files (a downloaded template, a static site, a design mockup with markup) and wants to turn them into a Nano CMS theme — phrases like "transforma esses html em tema do nano", "converte essa pasta de templates para nano", "vira isso aqui em theme", "tenho um modelo estático e quero usar no nano cms", "build a nano theme from these html files". Triggers in Portuguese and English. Always operates in plan-then-execute mode: produces a full mapping (files → pages, blocks → fields, partials, options) for user approval before generating any output. Do NOT use for: (a) installing a fresh Nano without conversion (that's nano-cms:install), (b) modifying an already-converted theme, (c) editing site.json schema in an established project, (d) answering questions about Nano helpers/syntax. Mentioning HTML, PHP, or themes alone does NOT trigger — only explicit conversion intent does.
+description: Convert a folder of static HTML/PHP templates into a Ellev (formerly Nano CMS) theme. Reads pages in the current directory, extracts shared header/footer into partials, identifies editable fields (titles, hero copy, images, repeating blocks), proposes a `site.json` schema with pages and item types, then generates Ellev-compatible PHP templates with `field()`, `option()`, `image_url()`, and other Ellev helpers wired in. Also pre-populates the admin panel with the same content that was hardcoded in the source — pages, items, taxonomy terms, and global options — via a one-shot seed script, so the user opens admin to a populated site, not empty fields. If the current directory is NOT inside an existing Ellev install, this skill creates `./theme/`, moves the source files there, then auto-installs Ellev (delegates to ellev:install) before doing the conversion. Use this skill whenever the user has static HTML/PHP files (a downloaded template, a static site, a design mockup with markup) and wants to turn them into a Ellev theme — phrases like "transforma esses html em tema do nano", "converte essa pasta de templates para nano", "vira isso aqui em theme", "tenho um modelo estático e quero usar no nano cms", "build a nano theme from these html files". Triggers in Portuguese and English. Always operates in plan-then-execute mode: produces a full mapping (files → pages, blocks → fields, partials, options) for user approval before generating any output. Do NOT use for: (a) installing a fresh Ellev without conversion (that's ellev:install), (b) modifying an already-converted theme, (c) editing site.json schema in an established project, (d) answering questions about Ellev helpers/syntax. Mentioning HTML, PHP, or themes alone does NOT trigger — only explicit conversion intent does.
 ---
 
-# Convert static templates into a Nano CMS theme
+# Convert static templates into a Ellev theme
 
-This skill turns a folder of static HTML/PHP pages into a working Nano theme. It analyzes the source, proposes a schema, gets user approval, then generates the theme.
+This skill turns a folder of static HTML/PHP pages into a working Ellev theme. It analyzes the source, proposes a schema, gets user approval, then generates the theme.
 
 ## Goal
 
 By the end:
 - Source HTML/PHP analyzed; shared partials extracted; pages and item types identified
 - `theme/site.json` written with a coherent schema (pages, item types, options, fields)
-- `theme/templates/page-*.php` and `theme/templates/single-*.php` generated with Nano helpers wired in (`field()`, `option()`, `image_url()`, `get_header()`, `get_footer()`)
+- `theme/templates/page-*.php` and `theme/templates/single-*.php` generated with Ellev helpers wired in (`field()`, `option()`, `image_url()`, `get_header()`, `get_footer()`)
 - `theme/partials/header.php` and `theme/partials/footer.php` extracted (or wired up if user already provided them)
 - Assets (CSS, JS, images) moved to `theme/`
 - `./bin/nano page:sync` runs successfully and `./bin/nano schema:validate` reports OK
@@ -24,16 +24,16 @@ The user iterates after by refining the seeded content. The skill's job is the s
 
 The skill runs from inside the folder containing the HTML/PHP source. Two scenarios:
 
-**Scenario A — Inside an existing Nano's `theme/` folder.**
+**Scenario A — Inside an existing Ellev's `theme/` folder.**
 Detect by checking if `../core/Bootstrap.php` exists. If yes, this is the destination — generate files in place (current dir).
 
-**Scenario B — Folder of templates outside any Nano.**
+**Scenario B — Folder of templates outside any Ellev.**
 Detect by checking for absence of `core/Bootstrap.php` (here or one level up). In this case:
-1. Tell the user: "Detected this folder isn't inside a Nano install. Plan: create `./theme/`, move all HTML/PHP/asset files into it, install Nano in current dir, then convert. OK?"
+1. Tell the user: "Detected this folder isn't inside a Ellev install. Plan: create `./theme/`, move all HTML/PHP/asset files into it, install Ellev in current dir, then convert. OK?"
 2. On confirmation:
    - `mkdir theme`
    - Move all source files (HTML/PHP/CSS/JS/images, but NOT `.git`, `.github`, or any dotfiles) into `theme/`
-   - Invoke the **nano-cms:install** skill to set up Nano in the current dir (it'll clone into root, write `.env`, run installer)
+   - Invoke the **ellev:install** skill to set up Ellev in the current dir (it'll clone into root, write `.env`, run installer)
    - After install completes, the source files are now at `./theme/*`. Continue conversion from inside `./theme/`.
 
 Reject and abort if neither scenario applies cleanly (e.g. `theme/` exists but is empty + we're nowhere) — ask the user to clarify.
@@ -80,7 +80,7 @@ Look for adjacent siblings with the same markup pattern (e.g., 3 testimonial car
 
 - Header navigation links → `option('nav.links')` (a global repeater)
 - Footer contact info (phone, email, address, social) → `option('contato')` (a global option group)
-- Logo → still hardcoded SVG/img in `partials/header.php` (per Nano's convention — site logo is theme-level, not editable per project unless requested)
+- Logo → still hardcoded SVG/img in `partials/header.php` (per Ellev's convention — site logo is theme-level, not editable per project unless requested)
 - Per-page hero, body, CTAs → page-level `field()`s
 
 ### Capture content alongside structure
@@ -94,7 +94,7 @@ Concretely, while reading each PHP file, write down:
 - **Item type instances** — when an archive page contains a `$projects` or `$posts` array (or repeated `<article>` cards), each row becomes a seeded item with all its fields.
 - **Taxonomy terms** — categories used in filter chips and `'cats' => [...]` arrays. Capture the term slugs and human labels.
 - **Option content** — nav link list, contact info (email, phone, whatsapp URL, address, hours), social URLs (Instagram, LinkedIn, etc.), recurring stats (the same `8+ years / 180+ brands / 635+ content / 4 countries` block that appears on multiple pages becomes one shared option).
-- **Image references** — capture the relative path as found (e.g., `assets/cases/wm-educacao.jpg`). Don't try to upload to the media library; the seeder will write the path string and Nano's `image_url()` resolves bare paths so the page renders immediately.
+- **Image references** — capture the relative path as found (e.g., `assets/cases/wm-educacao.jpg`). Don't try to upload to the media library; the seeder will write the path string and Ellev's `image_url()` resolves bare paths so the page renders immediately.
 - **Richtext / HTML body content** — inline `<p>`, `<ul>`, `<blockquote>` content inside body sections. For richtext fields, capture the inner HTML so it round-trips faithfully into TipTap.
 
 The user is going to see this captured content in the plan (Phase 2) and approve the seed before it runs (Phase 3.6). So extraction must be **complete and faithful** — never silently drop content. If a section has 6 services with 18 fields total, capture all 18.
@@ -184,15 +184,15 @@ Build the schema from the plan. Conventions:
 - Top-level `site` block: `name`, `description`, `language: "pt-BR"` (or detect from `<html lang>`). NO `url` — that's deployment-specific (.env)
 - `pages` keyed by lower-case slug: `home`, `sobre`, `contato`, etc.
 - Page `template` field: `page-<key>.php`
-- Page `url` field: `/` for home, `/<key>` otherwise (omit if matches the default — Nano falls back to `/<key>`)
+- Page `url` field: `/` for home, `/<key>` otherwise (omit if matches the default — Ellev falls back to `/<key>`)
 - `item_types` keyed by lower-case singular: `post`, `service`
 - Item types with `has_page: true` get `slug`, `template`, optionally `taxonomies`. Embed-only types use `has_page: false` and skip `slug`/`template`
 - `options` for global concerns (nav, contato, rodape, etc.)
-- DON'T add a built-in SEO field group — Nano handles SEO automatically for paged content (`Config::seoFields()` is built-in)
+- DON'T add a built-in SEO field group — Ellev handles SEO automatically for paged content (`Config::seoFields()` is built-in)
 
 ### 3.2. Write `partials/header.php` and `partials/footer.php`
 
-Each follows Nano conventions:
+Each follows Ellev conventions:
 
 ```php
 <?php
@@ -244,7 +244,7 @@ Footer mirrors this with `tracking_body_end()` before `</body>` and pulls contac
 Pattern:
 
 ```php
-<?php /** @var \Nano\TemplateContext $page */ ?>
+<?php /** @var \Ellev\TemplateContext $page */ ?>
 <?php with_context($page, function () { ?>
 <?php get_header(); ?>
 
@@ -275,7 +275,7 @@ Pattern:
 <?php }); ?>
 ```
 
-Conventions to follow strictly (these are why Nano works):
+Conventions to follow strictly (these are why Ellev works):
 - `<?= e($value) ?>` for any user-typed plain-text field — escapes by default
 - `<?= field('foo') /* trusted */ ?>` for richtext fields and HTML-allowed text fields (with the comment so future editors know it's intentional)
 - `image_url($value, $size)` always, never raw image field values (which are integer IDs)
@@ -289,7 +289,7 @@ Conventions to follow strictly (these are why Nano works):
 Same pattern, but the variable is `$item`:
 
 ```php
-<?php /** @var \Nano\TemplateContext $item */ ?>
+<?php /** @var \Ellev\TemplateContext $item */ ?>
 <?php with_context($item, function () { ?>
 <?php get_header(); ?>
 
@@ -302,7 +302,7 @@ Same pattern, but the variable is `$item`:
 <?php }); ?>
 ```
 
-The archive page (e.g. `page-blog.php`) uses `items('post')` to loop. Nano doesn't auto-route `/<type-slug>` archives anymore — each archive must be a configured page in `site.json`. Make sure the plan's `pages.blog` template loops items.
+The archive page (e.g. `page-blog.php`) uses `items('post')` to loop. Ellev doesn't auto-route `/<type-slug>` archives anymore — each archive must be a configured page in `site.json`. Make sure the plan's `pages.blog` template loops items.
 
 ### 3.5. Move assets
 
@@ -317,16 +317,16 @@ If the original HTML referenced `<link href="styles.css">`, the converted templa
 
 After `page:sync` runs, the page records exist but their `fields` are empty. The admin is structurally correct but visually empty — the user has to copy/paste content from the original PHP files into every form. That's tedious and error-prone. Instead: generate a **one-shot seed script** that writes every captured field, item, term, and option directly into the database, so the admin opens already populated.
 
-**Inspect Nano's models before writing the seed.** Don't guess the API. Read these files to learn the exact write surface:
+**Inspect Ellev's models before writing the seed.** Don't guess the API. Read these files to learn the exact write surface:
 
 - `core/Models/Page.php` — how to find a page by key and save its fields
 - `core/Models/Item.php` — how to create new items, set status, attach taxonomy terms
 - `core/Models/Term.php` — how to create taxonomy terms
 - The settings/options write API — grep for `Setting`, `Settings`, `option_set`, or how the admin's options edit form persists. It's likely a `Setting` model with `set()` / `save()`, or a direct PDO write to a `settings` table with `setting_key = "options.{key}"`.
 
-If you can't confidently find the option write API after a few minutes of reading, **stop and tell the user**: "I can't find how options are written in this Nano version. I'll seed pages, items, and terms — you'll fill in options manually via admin." Don't ship a broken seed.
+If you can't confidently find the option write API after a few minutes of reading, **stop and tell the user**: "I can't find how options are written in this Ellev version. I'll seed pages, items, and terms — you'll fill in options manually via admin." Don't ship a broken seed.
 
-**Where to put it.** Write `theme/install/seed.php`. It's a one-shot script bootstrapped against Nano's core:
+**Where to put it.** Write `theme/install/seed.php`. It's a one-shot script bootstrapped against Ellev's core:
 
 ```php
 <?php
@@ -335,9 +335,9 @@ If you can't confidently find the option write API after a few minutes of readin
 
 require __DIR__ . '/../../core/Bootstrap.php';
 
-use Nano\Models\Page;
-use Nano\Models\Item;
-use Nano\Models\Term;
+use Ellev\Models\Page;
+use Ellev\Models\Item;
+use Ellev\Models\Term;
 // ...other models you discovered (Setting, etc.)
 
 // --- Idempotency guard ---
@@ -425,7 +425,7 @@ $home->save(['fields' => [
 echo "Seed complete.\n";
 ```
 
-**Image fields → path strings, not media uploads.** Set them to the original relative path (e.g. `theme/assets/cases/wm-educacao.jpg`). Nano's `image_url()` accepts path strings as input, so the page renders with the original images immediately. The user can later upload via the media library and the integer ID replaces the string. **Don't try to programmatically upload to the media library** — too brittle, too easy to corrupt, and it's not what the user asked for.
+**Image fields → path strings, not media uploads.** Set them to the original relative path (e.g. `theme/assets/cases/wm-educacao.jpg`). Ellev's `image_url()` accepts path strings as input, so the page renders with the original images immediately. The user can later upload via the media library and the integer ID replaces the string. **Don't try to programmatically upload to the media library** — too brittle, too easy to corrupt, and it's not what the user asked for.
 
 **Item status.** Items go in as `'status' => 'published'` so the archive pages show them. Without this, the archive will appear empty.
 
@@ -454,7 +454,7 @@ If `schema:validate` errors, surface the error and offer to fix.
 If `page:sync` reports new pages added, that's expected.
 
 If the seed errors mid-way, surface the error and stop. Common causes:
-- **Model API mismatch** — your inspection of Nano's source produced wrong assumptions. Re-read the model file, fix the call, re-run. The script's idempotency guard means re-running is safe (it'll skip if home is already populated, otherwise pick up where it left off).
+- **Model API mismatch** — your inspection of Ellev's source produced wrong assumptions. Re-read the model file, fix the call, re-run. The script's idempotency guard means re-running is safe (it'll skip if home is already populated, otherwise pick up where it left off).
 - **Unique slug constraint** — an item with that slug already exists. Means a previous partial seed ran. Either delete the half-seeded items and re-run, or add per-item existence checks.
 - **Missing taxonomy term** — order of operations is wrong. Make sure all `Term::create` calls happen before items that reference them.
 - **Empty option write** — your option API guess didn't actually persist. Verify by reading from the DB directly. If the API surface isn't clear, fall back to direct PDO writes against the `settings` table.
@@ -488,7 +488,7 @@ When extracting fields, think about WHY each piece of text/image would be editab
 - **Editable**: hero title, intro paragraph, CTA text, image, prices, dates, names that change per project
 - **Hardcoded in template**: section labels ("Our Services", "Featured Posts"), navigation labels (those are option-driven), copyright year (use `<?= date('Y') ?>`), structural CSS class names
 
-When ambiguous, lean toward **editable** — Nano's admin handles empty fields gracefully (Nano-style templates use `<?php if ($field !== ''): ?>` patterns), and giving the user one extra field to ignore is better than baking content into PHP they can't reach from the admin.
+When ambiguous, lean toward **editable** — Ellev's admin handles empty fields gracefully (Ellev-style templates use `<?php if ($field !== ''): ?>` patterns), and giving the user one extra field to ignore is better than baking content into PHP they can't reach from the admin.
 
 ## Don't surprise the user
 

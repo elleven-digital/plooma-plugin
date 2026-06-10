@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Execute a single content write operation on the remote Nano site.
+# Execute a single content write operation on the remote Ellev site.
 #
 # Maps a high-level --action (item:create, page:update, etc.) onto the
 # matching bin/nano subcommand on the remote, with proper flag plumbing

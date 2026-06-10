@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Discover what content lives on a Nano CMS site, in one round-trip.
+# Discover what content lives on a Ellev site, in one round-trip.
 #
 # Outputs a single JSON document on stdout with the SSH target, remote path,
 # all item types defined in site.json, and all configured pages. The skill
@@ -30,7 +30,7 @@ types_json=$(remote_nano "item:types --format=json" 2>/tmp/discover-err.log) || 
     cat /tmp/discover-err.log >&2
     rm -f /tmp/discover-err.log
     cat <<EOF
-{"ok": false, "error": "Could not run 'bin/nano item:types' on remote. The server may have an older Nano without content commands. Upgrade required: commit dcebc50 or later.", "ssh_target": "${SSH_TARGET}"}
+{"ok": false, "error": "Could not run 'bin/nano item:types' on remote. The server may have an older Ellev without content commands. Upgrade required: commit dcebc50 or later.", "ssh_target": "${SSH_TARGET}"}
 EOF
     exit 1
 }

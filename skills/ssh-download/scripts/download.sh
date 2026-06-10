@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Main download operation for nano-cms:ssh-download.
+# Main download operation for ellev:ssh-download.
 #
 # Modes:
 #   --mode A  → first-time download into an empty (or near-empty) folder
-#   --mode B  → refresh an existing Nano install: BACKUP + WIPE + replace
+#   --mode B  → refresh an existing Ellev install: BACKUP + WIPE + replace
 #
-# Both modes end with a working local Nano that mirrors the remote, with
+# Both modes end with a working local Ellev that mirrors the remote, with
 # .env adjusted for local development.
 #
 # Usage: download.sh --config <path> --mode <A|B> [--backup <dir>]
@@ -60,8 +60,8 @@ local_mysql_args=(-u"${LOCAL_DB_USER}" -h"${LOCAL_DB_HOST}")
 
 CWD=$(pwd)
 TS=$(date +%Y%m%d-%H%M%S)
-BACKUP_DIR="${BACKUP_DIR:-/tmp/nano-download-backup-${TS}}"
-REMOTE_DUMP="/tmp/nano-remote-dump-${TS}.sql"
+BACKUP_DIR="${BACKUP_DIR:-/tmp/ellev-download-backup-${TS}}"
+REMOTE_DUMP="/tmp/ellev-remote-dump-${TS}.sql"
 
 log_ok "Config loaded — remote: ${SSH_TARGET}:${REMOTE_PATH}"
 log_ok "Local target: ${CWD} → DB ${LOCAL_DB_NAME}@${LOCAL_DB_HOST}"

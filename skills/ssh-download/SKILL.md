@@ -1,15 +1,15 @@
 ---
 name: ssh-download
-description: Pull a deployed Nano CMS project from a remote server down to the current local folder — files + database + media uploads — for local debugging, dev parity, or moving a site to a new machine. Inverse of nano-cms:ssh-deploy. Two modes detected automatically: (A) **first-time** when current folder is empty, asks SSH + remote path + local DB credentials, downloads, configures `.env` for localhost, saves config to `.deploy/ssh.json`; (B) **refresh** when the current folder already has a Nano install with `.deploy/ssh.json`, reuses everything, then DESTRUCTIVELY replaces the local copy with an exact mirror of the remote (drops + recreates local DB, deletes ALL local files including `theme/`, `storage/`, `.git/`, the live `.env` and `.htaccess`), bringing back only environment variables adjusted to the local context. Always backs up the local state to `/tmp/nano-download-backup-<timestamp>/` before any destructive operation, so the user has a recovery window. Use this skill whenever the user wants to bring production down to local — phrases like "baixa o nano da hostinger", "pull do servidor pro meu pc", "baixa o site de produção", "clona o nano que tá no servidor pra cá", "preciso debugar local com os dados de produção", "sync from server to local", "mirror prod locally", "download my nano site from VPS". Triggers in Portuguese and English. Do NOT use for: (a) deploying TO a server (that's nano-cms:ssh-deploy), (b) installing fresh Nano with no remote source (that's nano-cms:install), (c) downloading just the database (user can run `mysqldump` over SSH directly for that), (d) syncing only files without the DB (this skill is all-or-nothing — full mirror).
+description: Pull a deployed Ellev (formerly Nano CMS) project from a remote server down to the current local folder — files + database + media uploads — for local debugging, dev parity, or moving a site to a new machine. Inverse of ellev:ssh-deploy. Two modes detected automatically: (A) **first-time** when current folder is empty, asks SSH + remote path + local DB credentials, downloads, configures `.env` for localhost, saves config to `.deploy/ssh.json`; (B) **refresh** when the current folder already has a Ellev install with `.deploy/ssh.json`, reuses everything, then DESTRUCTIVELY replaces the local copy with an exact mirror of the remote (drops + recreates local DB, deletes ALL local files including `theme/`, `storage/`, `.git/`, the live `.env` and `.htaccess`), bringing back only environment variables adjusted to the local context. Always backs up the local state to `/tmp/ellev-download-backup-<timestamp>/` before any destructive operation, so the user has a recovery window. Use this skill whenever the user wants to bring production down to local — phrases like "baixa o nano da hostinger", "pull do servidor pro meu pc", "baixa o site de produção", "clona o nano que tá no servidor pra cá", "preciso debugar local com os dados de produção", "sync from server to local", "mirror prod locally", "download my nano site from VPS". Triggers in Portuguese and English. Do NOT use for: (a) deploying TO a server (that's ellev:ssh-deploy), (b) installing fresh Ellev with no remote source (that's ellev:install), (c) downloading just the database (user can run `mysqldump` over SSH directly for that), (d) syncing only files without the DB (this skill is all-or-nothing — full mirror).
 ---
 
-# Pull Nano CMS from a remote server to local
+# Pull Ellev from a remote server to local
 
-This skill is the inverse of `nano-cms:ssh-deploy`. It connects to a remote Nano install via SSH, pulls down the entire project (files + DB dump + uploads), and reconstitutes it locally. The local result is byte-for-byte identical to remote, except the environment variables (DB credentials, APP_URL, SMTP) are rewritten to match the local context.
+This skill is the inverse of `ellev:ssh-deploy`. It connects to a remote Ellev install via SSH, pulls down the entire project (files + DB dump + uploads), and reconstitutes it locally. The local result is byte-for-byte identical to remote, except the environment variables (DB credentials, APP_URL, SMTP) are rewritten to match the local context.
 
 ## Why this exists
 
-A real Nano workflow has two ends — production on a server, and dev on the user's laptop. `nano-cms:ssh-deploy` handles local→remote. Sometimes the data flow needs to reverse:
+A real Ellev workflow has two ends — production on a server, and dev on the user's laptop. `ellev:ssh-deploy` handles local→remote. Sometimes the data flow needs to reverse:
 
 - Editor created content directly in the production admin and dev needs that content locally to debug
 - Site is moving from one host to another and dev needs a working copy to migrate from
@@ -27,7 +27,7 @@ For each of these, the operation is the same: replace local with remote, adjusti
       yes
        │
        ▼
-core/Bootstrap.php exists?  ──no──▶ Mode A: first-time (config existed but no Nano —
+core/Bootstrap.php exists?  ──no──▶ Mode A: first-time (config existed but no Ellev —
                                             unusual, but treat as fresh)
        │
       yes
@@ -37,7 +37,7 @@ core/Bootstrap.php exists?  ──no──▶ Mode A: first-time (config existed
                                      Reuse config, WIPE local, mirror remote.
 ```
 
-**Mode A (first-time)**: gather everything from the user, validate, save config, download. Creates a working Nano install in the current folder.
+**Mode A (first-time)**: gather everything from the user, validate, save config, download. Creates a working Ellev install in the current folder.
 
 **Mode B (refresh)**: load saved config, validate, **destroy local state** (with backup), download from remote.
 
@@ -47,7 +47,7 @@ In both modes the result is the same: the local folder contains an exact replica
 
 1. Read `.deploy/ssh.json` if it exists. Treat existence as evidence of established mode.
 2. Check `core/Bootstrap.php`. If config exists but Bootstrap doesn't, the project was previously initialized but later wiped — fall back to Mode A using the config as defaults.
-3. If folder is non-empty but has no `.deploy/ssh.json` and no `core/Bootstrap.php`, this is ambiguous — STOP and ask the user: "Não detectei nem Nano nem `.deploy/ssh.json`, mas a pasta tem arquivos. Quer (a) abortar, (b) tratar como nova instalação (vou backupear esses arquivos antes de baixar)?"
+3. If folder is non-empty but has no `.deploy/ssh.json` and no `core/Bootstrap.php`, this is ambiguous — STOP and ask the user: "Não detectei nem Ellev nem `.deploy/ssh.json`, mas a pasta tem arquivos. Quer (a) abortar, (b) tratar como nova instalação (vou backupear esses arquivos antes de baixar)?"
 
 ## Phase 1 — Gather config (Mode A only)
 
@@ -57,7 +57,7 @@ If `.deploy/ssh.json` doesn't exist, ask everything in one batch (most are defau
 - `ssh.alias` — Host alias from `~/.ssh/config` (cleanest)
 - OR `ssh.host` + `ssh.port` (default `22`; Hostinger is `65002`) + `ssh.user` + `ssh.key_path` (default `~/.ssh/id_ed25519`)
 
-**Remote path** — `ssh.remote_path` is the absolute path on the server where Nano lives. Same hosts table as nano-cms:ssh-deploy:
+**Remote path** — `ssh.remote_path` is the absolute path on the server where Ellev lives. Same hosts table as ellev:ssh-deploy:
 - Hostinger shared: `/home/uXXXX/domains/<domain>/public_html`
 - cPanel: `/home/<user>/public_html` (root domain) or with subdir
 - VPS: `/var/www/<project>` typically
@@ -77,7 +77,7 @@ If the user doesn't know, ask them to SSH in and run `pwd` from the web root.
 - `site.local_url` — what URL the user accesses locally. Examples: `http://localhost/expmark`, `http://localhost:8080`, `http://expmark.test`.
 - `site.local_subpath` — typically `/` (or `/<folder>` if served from a subdir of the dev server)
 
-After gathering, save to `.deploy/ssh.json`, `chmod 0600`. Same schema as `nano-cms:ssh-deploy` — this skill and that one share the config file.
+After gathering, save to `.deploy/ssh.json`, `chmod 0600`. Same schema as `ellev:ssh-deploy` — this skill and that one share the config file.
 
 ### Config schema (extends ssh-deploy schema)
 
@@ -115,7 +115,7 @@ The `local.*` fields are required for download (they'd be optional for ssh-deplo
 Run `scripts/preflight.sh --config .deploy/ssh.json`. It checks, in order:
 
 1. **SSH connects** — `ssh <opts> 'echo ok'`. Fails with auth/network error → tell user to verify credentials/network.
-2. **Remote has Nano** — `ssh <opts> "test -f <remote_path>/core/Bootstrap.php && echo HAS_NANO || echo NO_NANO"`. If NO_NANO, abort with: "Não encontrei Nano em `<remote_path>` no servidor. O caminho está correto?"
+2. **Remote has Ellev** — `ssh <opts> "test -f <remote_path>/core/Bootstrap.php && echo HAS_NANO || echo NO_NANO"`. If NO_NANO, abort with: "Não encontrei Ellev em `<remote_path>` no servidor. O caminho está correto?"
 3. **Remote DB connects** — `ssh <opts> "mysql -u<user> -p<pass> -e 'SELECT 1' <name>"`. Catches typos in DB credentials.
 4. **Local DB connects** — `mysql -u<local-user> -p<local-pass> -e 'SELECT 1'`. If wrong credentials, abort and ask user to fix.
 5. **Local DB user has DROP/CREATE privileges** — try `mysql -e "CREATE DATABASE IF NOT EXISTS __nano_priv_check; DROP DATABASE __nano_priv_check"`. If permission denied, abort.
@@ -147,13 +147,13 @@ Download plan (first-time):
 Continue? (y/N)
 ```
 
-**Mode B (existing Nano):**
+**Mode B (existing Ellev):**
 ```
 ⚠️  Refresh plan (DESTRUCTIVE):
 
-  This folder currently has a Nano install. Refreshing will:
-    • Backup local files → /tmp/nano-download-backup-<ts>/files/
-    • Backup local DB → /tmp/nano-download-backup-<ts>/local-db.sql
+  This folder currently has a Ellev install. Refreshing will:
+    • Backup local files → /tmp/ellev-download-backup-<ts>/files/
+    • Backup local DB → /tmp/ellev-download-backup-<ts>/local-db.sql
     • DELETE everything in current folder (including theme/, storage/,
       .git/, .env, .htaccess, robots.txt — every file and hidden file)
     • DROP local DB and recreate empty
@@ -179,9 +179,9 @@ Mode B uses an uppercase confirmation phrase (not just `y`) because the destruct
 Run `scripts/download.sh --config .deploy/ssh.json --mode <A|B>`. The script:
 
 1. **Backup (Mode B only)**: 
-   - `mkdir -p /tmp/nano-download-backup-<ts>/files`
+   - `mkdir -p /tmp/ellev-download-backup-<ts>/files`
    - Move all current dir contents (visible + hidden) into the backup dir, EXCEPT `.deploy/` (we read that into memory before this step so it doesn't matter, but moving it would lose the config mid-script)
-   - Dump local DB to `/tmp/nano-download-backup-<ts>/local-db.sql`
+   - Dump local DB to `/tmp/ellev-download-backup-<ts>/local-db.sql`
 
 2. **Wipe local (Mode B only)**:
    - At this point everything is in backup. The current dir is effectively empty.
@@ -241,7 +241,7 @@ Mirrored:
   - .env regenerated for local development
 
 Backup (Mode B):
-  /tmp/nano-download-backup-<ts>/
+  /tmp/ellev-download-backup-<ts>/
     ├── files/             # everything that was in this folder before
     └── local-db.sql       # local DB dump before drop
 
@@ -261,7 +261,7 @@ The skill never:
 - Wipes local without backing up first.
 - Wipes local DB without dumping first.
 - Touches the remote (this is download, not push — purely read-only on remote).
-- Uses `--delete` on rsync without verifying remote has Nano (preflight covers this).
+- Uses `--delete` on rsync without verifying remote has Ellev (preflight covers this).
 - Saves a `.deploy/ssh.json` that didn't pass validation.
 - Asks for credentials when config exists (always reuse).
 
@@ -294,15 +294,15 @@ The actual operations live in `scripts/`. Each script:
 | Script | Purpose |
 |---|---|
 | `_lib.sh` | Shared helpers: `resolve_ssh_cmd`, `read_config`, `confirm_yes` |
-| `preflight.sh` | All 5 preflight checks (SSH + remote Nano + remote DB + local DB + local DB privs) |
+| `preflight.sh` | All 5 preflight checks (SSH + remote Ellev + remote DB + local DB + local DB privs) |
 | `download.sh` | Main operation: backup → wipe → rsync → dump+import → write .env → save config |
 
 Read the scripts to understand the exact commands before invoking. They're the source of truth for the actual destructive operations.
 
 ## What this skill does NOT do
 
-- Deploy TO a server (use `nano-cms:ssh-deploy`)
-- Install Nano without a remote source (use `nano-cms:install`)
+- Deploy TO a server (use `ellev:ssh-deploy`)
+- Install Ellev without a remote source (use `ellev:install`)
 - Sync only DB without files, or files without DB — this skill is all-or-nothing
 - Restore from a backup made by an earlier run (manual operation; backups are at `/tmp/`)
-- Re-establish git history. The downloaded copy comes via rsync, so there's no `.git/` (unless remote happened to have one, which it won't if it was deployed via ssh-deploy). To get a git-tracked Nano for `nano-cms:upgrade` later, the user can `git clone` upstream into a temp dir and copy `.git/` over. Out of scope for v1.
+- Re-establish git history. The downloaded copy comes via rsync, so there's no `.git/` (unless remote happened to have one, which it won't if it was deployed via ssh-deploy). To get a git-tracked Ellev for `ellev:upgrade` later, the user can `git clone` upstream into a temp dir and copy `.git/` over. Out of scope for v1.
