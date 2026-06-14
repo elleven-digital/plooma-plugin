@@ -181,6 +181,7 @@ Run `scripts/init.sh --config .deploy/ssh.json`. It:
 2. Dumps local DB to `/tmp/plooma-init-<timestamp>.sql`
 3. `rsync -avz --delete-after` of project files to remote, **excluding**:
    - `.env`, `.git/`, `.deploy/`, `node_modules/`
+   - `tests/`, `docs/` (dev-only — versioned in git, not shipped to production)
    - `storage/cache/*`, `storage/logs/*`
    - `theme/` legacy source files (anything matching `theme/*.php` directly in theme root, not in `theme/templates/` etc — these are leftovers from `plooma:theme-convert`)
 4. Generates remote `.env` from config (`APP_URL`, `APP_BASE_PATH`, `DB_*`, etc.) — **not committing** anything from local `.env`

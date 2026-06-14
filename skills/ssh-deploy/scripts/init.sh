@@ -70,6 +70,9 @@ excludes=(
     --exclude=.DS_Store
     --exclude=Thumbs.db
     --exclude=node_modules/
+    # dev-only — versioned in git but not shipped to production (mirrors the WordPress build)
+    --exclude=tests/
+    --exclude=docs/
     --exclude=storage/cache/*
     --exclude=storage/logs/*
     --exclude=*.bak
