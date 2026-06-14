@@ -199,7 +199,7 @@ remote_path() {
     local path
     path=$(cfg_get '.ssh.remote_path')
     if [[ -z "$path" ]]; then
-        die "ssh.remote_path is required in config — absolute path on the remote host where Ellev lives (e.g. /var/www/site, /home/user/public_html, /home/u123/domains/site.com/public_html)"
+        die "ssh.remote_path is required in config — absolute path on the remote host where Plooma lives (e.g. /var/www/site, /home/user/public_html, /home/u123/domains/site.com/public_html)"
     fi
     # Strip trailing slash for consistent concatenation.
     echo "${path%/}"
@@ -262,18 +262,18 @@ confirm_phrase() {
 }
 
 # ─────────────────────────────────────────────────────────────────────
-# bin/ellev on the remote (ssh-content)
+# bin/plooma on the remote (ssh-content)
 # ─────────────────────────────────────────────────────────────────────
 # Lets sites override which PHP interpreter runs — useful on shared
 # hosts where multiple PHP versions live side-by-side and the default
-# `php` in PATH isn't the one Ellev expects.
+# `php` in PATH isn't the one Plooma expects.
 resolve_php_bin() {
     local p
     p=$(cfg_get '.remote.php_bin')
     echo "${p:-php}"
 }
 
-# cd into the remote project + set PHP_BIN. Caller appends the bin/ellev
+# cd into the remote project + set PHP_BIN. Caller appends the bin/plooma
 # subcommand. Matches the way the user runs commands themselves on the
 # server (no absolute paths, no surprises).
 remote_prefix() {
@@ -287,22 +287,22 @@ remote_prefix() {
     echo "cd ${rp} && PHP_BIN='${php_bin}' "
 }
 
-# Runs a bin/ellev subcommand on the remote. Returns its stdout (JSON
+# Runs a bin/plooma subcommand on the remote. Returns its stdout (JSON
 # when --format=json was passed).
-# Usage: remote_ellev "item:list posts --format=json --status=draft"
-remote_ellev() {
+# Usage: remote_plooma "item:list posts --format=json --status=draft"
+remote_plooma() {
     local subcommand="$1"
     local prefix
     prefix=$(remote_prefix)
-    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/ellev ${subcommand}"
+    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/plooma ${subcommand}"
 }
 
-# Same as remote_ellev but pipes the caller's stdin to the remote
+# Same as remote_plooma but pipes the caller's stdin to the remote
 # command — used for --json-stdin payloads where shell-escaping a JSON
 # literal would be painful.
-remote_ellev_stdin() {
+remote_plooma_stdin() {
     local subcommand="$1"
     local prefix
     prefix=$(remote_prefix)
-    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/ellev ${subcommand}"
+    eval "$SSH_CMD" "$SSH_TARGET" "${prefix}./bin/plooma ${subcommand}"
 }

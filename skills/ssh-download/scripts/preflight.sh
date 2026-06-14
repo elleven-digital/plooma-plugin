@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preflight checks for ellev:ssh-download.
+# Preflight checks for plooma:ssh-download.
 #
 # Validates everything that must be true before the destructive download
 # operation runs. Exits 0 if all good, non-zero otherwise (with the failing
@@ -45,16 +45,16 @@ log_ok "SSH connects"
 rm -f /tmp/preflight-ssh.err
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Check 2: Remote has Ellev at the configured path
+# Check 2: Remote has Plooma at the configured path
 # ─────────────────────────────────────────────────────────────────────────────
-log_step "2/5 Remote has Ellev at ${REMOTE_PATH}"
+log_step "2/5 Remote has Plooma at ${REMOTE_PATH}"
 remote_check=$(eval "$SSH_CMD" "$SSH_TARGET" "test -f '${REMOTE_PATH}/core/Bootstrap.php' && echo HAS_ELLEV || echo NO_ELLEV" 2>/dev/null || echo "NO_ELLEV")
 if [[ "$remote_check" != "HAS_ELLEV" ]]; then
-    log_err "Não encontrei Ellev em ${REMOTE_PATH} no servidor."
+    log_err "Não encontrei Plooma em ${REMOTE_PATH} no servidor."
     echo "  Verifique o caminho — execute no servidor: ls ${REMOTE_PATH}" >&2
     exit 1
 fi
-log_ok "Ellev found at ${REMOTE_PATH}"
+log_ok "Plooma found at ${REMOTE_PATH}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Check 3: Remote DB is accessible
@@ -89,7 +89,7 @@ log_ok "Local DB reachable"
 # Check 5: Local DB user has DROP/CREATE privileges
 # ─────────────────────────────────────────────────────────────────────────────
 log_step "5/5 Local DB user has DROP/CREATE privileges"
-priv_check_db="__ellev_priv_check_$$"
+priv_check_db="__plooma_priv_check_$$"
 if ! mysql "${local_mysql_args[@]}" -e "CREATE DATABASE IF NOT EXISTS \`${priv_check_db}\`; DROP DATABASE \`${priv_check_db}\`;" 2>/tmp/preflight-priv.err; then
     log_err "Usuário local '${LOCAL_DB_USER}' não tem privilégios pra DROP/CREATE database."
     echo "  Output do MySQL:" >&2

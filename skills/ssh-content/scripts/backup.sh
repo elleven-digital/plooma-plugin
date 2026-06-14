@@ -2,7 +2,7 @@
 # Backup remote DB tables before any content write.
 #
 # Streams `mysqldump` output from the remote DB back to a local file at
-# /tmp/ellev-content-backup-<ts>.sql. Default tables: items,pages — those are
+# /tmp/plooma-content-backup-<ts>.sql. Default tables: items,pages — those are
 # the only ones content commands ever touch. Override with --tables for a
 # fuller backup if needed.
 #
@@ -35,7 +35,7 @@ if [[ -z "$DB_NAME" || -z "$DB_USER" ]]; then
 fi
 
 TS=$(date +%Y%m%d-%H%M%S)
-BACKUP_FILE="/tmp/ellev-content-backup-${TS}.sql"
+BACKUP_FILE="/tmp/plooma-content-backup-${TS}.sql"
 
 # Convert comma-separated tables to space-separated for mysqldump.
 TABLES_LIST=$(echo "$TABLES" | tr ',' ' ')

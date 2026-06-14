@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Update Ellev theme on remote: rsync theme/ (excluding install/, uploads, .env)
+# Update Plooma theme on remote: rsync theme/ (excluding install/, uploads, .env)
 # and run `schema:validate` + `page:sync`.
-# Refuses if Ellev isn't already installed at target.
+# Refuses if Plooma isn't already installed at target.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=_lib.sh
@@ -19,11 +19,11 @@ step "update-theme → ${ssh_target}:${remote_path}"
 # --- Refuse if target is empty ---
 state=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>&1)
 if [[ "$state" != "EXISTS" ]]; then
-    err "Ellev não detectado em ${remote_path}."
+    err "Plooma não detectado em ${remote_path}."
     err "update-theme só roda em instalações existentes. Use init.sh para o primeiro deploy."
     exit 1
 fi
-ok "Ellev detected — proceeding"
+ok "Plooma detected — proceeding"
 
 # --- Rsync theme/ only ---
 if [[ ! -d "./theme" ]]; then
@@ -38,7 +38,7 @@ rsync_dest=$(rsync_target_for "$remote_path")
 #   install/seed.php  — already ran on init, no need to re-ship
 #   theme/storage/    — uploads live there in some setups; never overwrite
 #   *.bak, .DS_Store  — local cruft
-#   theme/*.php       — legacy ellev:theme-convert leftover files at theme root
+#   theme/*.php       — legacy plooma:theme-convert leftover files at theme root
 excludes=(
     --exclude='install/seed.php'
     --exclude='storage/'
@@ -64,7 +64,7 @@ ok "Theme files synced"
 
 # --- Validate schema and sync pages ---
 step "Running schema:validate"
-sv_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev schema:validate 2>&1" || true)
+sv_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/plooma schema:validate 2>&1" || true)
 echo "$sv_out" | sed 's/^/  /' >&2
 if echo "$sv_out" | grep -qiE "error|invalid|issue"; then
     err "schema:validate reported issues. Fix theme/site.json and re-run."
@@ -73,7 +73,7 @@ fi
 ok "schema OK"
 
 step "Running page:sync"
-ps_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/ellev page:sync 2>&1" || true)
+ps_out=$("${ssh_args[@]}" "cd '${remote_path}' && php bin/plooma page:sync 2>&1" || true)
 echo "$ps_out" | sed 's/^/  /' >&2
 ok "page:sync done"
 

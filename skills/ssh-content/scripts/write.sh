@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Execute a single content write operation on the remote Ellev site.
+# Execute a single content write operation on the remote Plooma site.
 #
 # Maps a high-level --action (item:create, page:update, etc.) onto the
-# matching bin/ellev subcommand on the remote, with proper flag plumbing
+# matching bin/plooma subcommand on the remote, with proper flag plumbing
 # (--json-stdin, --dry-run, --confirm, --format=json). Returns the JSON
-# response from bin/ellev on stdout.
+# response from bin/plooma on stdout.
 #
 # Why this script exists when the model could just SSH directly:
 #   - Hides the SSH command/target resolution behind --config (skill stays
 #     focused on intent, not transport)
 #   - Routes JSON payloads through stdin properly (avoids quoting hell)
-#   - Single place for "how do we talk to bin/ellev" — easy to evolve
-#   - Predictable error envelope ({"ok": false, ...}) when SSH or ellev fails
+#   - Single place for "how do we talk to bin/plooma" — easy to evolve
+#   - Predictable error envelope ({"ok": false, ...}) when SSH or plooma fails
 #
 # This script DOES NOT perform a backup. The skill is expected to call
 # backup.sh BEFORE write.sh for any non-trivial write. Keeping them split
@@ -58,7 +58,7 @@ fi
 eval "$(resolve_ssh_cmd)"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Build the bin/ellev subcommand based on --action
+# Build the bin/plooma subcommand based on --action
 # ─────────────────────────────────────────────────────────────────────────────
 NEEDS_JSON=0
 NEEDS_SLUG=0
@@ -103,22 +103,22 @@ remote_args="${remote_args} --format=json"
 [[ "$CONFIRM" == "1" && "$NEEDS_CONFIRM" == "1" ]] && remote_args="${remote_args} --confirm"
 
 REMOTE_PREFIX=$(remote_prefix)
-REMOTE_CMD="${REMOTE_PREFIX}./bin/ellev ${ELLEV_VERB} ${remote_args}"
+REMOTE_CMD="${REMOTE_PREFIX}./bin/plooma ${ELLEV_VERB} ${remote_args}"
 
-log_step "Executing on ${SSH_TARGET}: bin/ellev ${ELLEV_VERB} ${remote_args}"
+log_step "Executing on ${SSH_TARGET}: bin/plooma ${ELLEV_VERB} ${remote_args}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Run via SSH. When the action needs JSON, capture local stdin and pipe
-# straight into the SSH stdin → remote bin/ellev stdin (which has --json-stdin).
+# straight into the SSH stdin → remote bin/plooma stdin (which has --json-stdin).
 # ─────────────────────────────────────────────────────────────────────────────
 # Runs the SSH call. With JSON_STDIN=1, local stdin (which is the user's
-# piped-in JSON) flows through SSH to the remote bin/ellev process — that's
+# piped-in JSON) flows through SSH to the remote bin/plooma process — that's
 # the default ssh behavior and we don't have to do anything special.
 if ! eval "$SSH_CMD" "$SSH_TARGET" "$REMOTE_CMD" 2>/tmp/write-err.log; then
     log_err "Remote command failed:"
     cat /tmp/write-err.log >&2
     rm -f /tmp/write-err.log
-    echo "{\"ok\": false, \"error\": \"SSH or remote bin/ellev failed — see stderr.\"}"
+    echo "{\"ok\": false, \"error\": \"SSH or remote bin/plooma failed — see stderr.\"}"
     exit 1
 fi
 rm -f /tmp/write-err.log

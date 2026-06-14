@@ -1,16 +1,16 @@
 {
-  "name": "ellev",
+  "name": "plooma",
   "version": "1.0.0",
-  "description": "Claude Code plugin for Ellev — install, upgrade, deploy via SSH, manage remote content, and convert static templates into Ellev themes. Six skills covering the full lifecycle of a Ellev project.",
+  "description": "Claude Code plugin for Plooma — install, upgrade, deploy via SSH, manage remote content, and convert static templates into Plooma themes. Six skills covering the full lifecycle of a Plooma project.",
   "author": {
     "name": "Rick Falaschi",
     "url": "https://github.com/rickfalaschi"
   },
-  "repository": "https://github.com/elleven-digital/ellev-plugin",
-  "homepage": "https://github.com/elleven-digital/ellev-plugin",
+  "repository": "https://github.com/elleven-digital/plooma-plugin",
+  "homepage": "https://github.com/elleven-digital/plooma-plugin",
   "license": "MIT",
   "keywords": [
-    "ellev",
+    "plooma",
     "php",
     "cms",
     "ssh-deploy",

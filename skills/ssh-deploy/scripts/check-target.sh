@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inspect the remote target for an existing Ellev install.
+# Inspect the remote target for an existing Plooma install.
 # Prints "EXISTS" or "EMPTY" to stdout (consumable). Logs progress to stderr.
 # Exits 0 on either result, non-zero only on SSH/auth failure.
 
@@ -21,16 +21,16 @@ if ! "${ssh_args[@]}" -o ConnectTimeout=10 "echo OK" >/dev/null 2>&1; then
 fi
 ok "SSH OK"
 
-# Check for the canonical Ellev marker file.
+# Check for the canonical Plooma marker file.
 result=$("${ssh_args[@]}" "test -f '${remote_path}/core/Bootstrap.php' && echo EXISTS || echo EMPTY" 2>/dev/null || echo "ERROR")
 
 case "$result" in
     EXISTS)
-        ok "Ellev detected at ${remote_path}"
+        ok "Plooma detected at ${remote_path}"
         echo "EXISTS"
         ;;
     EMPTY)
-        ok "Target is empty (no Ellev install)"
+        ok "Target is empty (no Plooma install)"
         echo "EMPTY"
         ;;
     *)
