@@ -50,52 +50,70 @@ Run `ls -la` in the current directory and reason about what's there:
 
 ## Step 2 — Fetch tarball
 
-Resolve the version to install. Default: latest tagged release on `elleven-digital/plooma`. Override via `--version=v1.2.3` if the user wants a specific version.
+Resolve the version to install from the public release manifest (`releases.plooma.io/versions.json`). Default: the `latest` entry. Override via `--version=v1.2.3` for a specific version, or `--release-base-url=<url>` for a mirror.
 
 ```bash
-REPO="elleven-digital/plooma"     # default; override with --repo if user passed one
+RELEASE_BASE_URL="https://releases.plooma.io"   # default; override com --release-base-url=<url>
 
-# 1. Resolve version to install
-if [[ -n "$VERSION" ]]; then
-    TAG="$VERSION"
-else
-    # GitHub tags API — first item is the most recent tag.
-    # We use /tags rather than /releases/latest because tags work even
-    # when no GitHub Release was published; only requires `git tag` upstream.
-    TAG=$(curl -fsS "https://api.github.com/repos/${REPO}/tags" \
-        | jq -r '.[0].name')
-    if [[ -z "$TAG" || "$TAG" == "null" ]]; then
-        echo "Could not determine latest version from GitHub. Pass --version=vX.Y.Z explicitly." >&2
-        exit 1
-    fi
-fi
-
-# 2. Download tarball
-TMPDIR=$(mktemp -d)
-TARBALL_URL="https://github.com/${REPO}/archive/refs/tags/${TAG}.tar.gz"
-curl -fSL "$TARBALL_URL" -o "$TMPDIR/plooma.tar.gz" || {
-    echo "Failed to download ${TARBALL_URL}. Check tag name and network." >&2
-    rm -rf "$TMPDIR"; exit 1
-}
-
-# 3. Extract
-tar -xzf "$TMPDIR/plooma.tar.gz" -C "$TMPDIR/"
-EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d \( -name "plooma-*" \) | head -1)
-
-# 4. Copy contents to current directory (NOT including a wrapper folder).
-#    The tarball extracts into plooma-cms-1.0.0/, we want its contents in cwd.
-( cd "$EXTRACTED" && tar cf - . ) | tar xf -
-
-# 5. Cleanup tarball
-rm -rf "$TMPDIR"
-
-# 6. Verify
-[ -f core/Bootstrap.php ] && [ -f bin/plooma ] || {
-    echo "Install failed — core/Bootstrap.php or bin/plooma not found after extraction." >&2
+# 1. Manifesto de descoberta de versão (substitui a tags API do GitHub).
+MANIFEST=$(curl -fsSL "${RELEASE_BASE_URL}/versions.json") || {
+    echo "Não consegui buscar ${RELEASE_BASE_URL}/versions.json. Verifique a URL e a rede." >&2
     exit 1
 }
 
-echo "Fetched Plooma ${TAG}"
+# 2. Resolver versão alvo + url + sha256.
+if [[ -n "$VERSION" ]]; then
+    TAG="$VERSION"
+else
+    TAG=$(echo "$MANIFEST" | jq -r '.latest')
+fi
+ENTRY=$(echo "$MANIFEST" | jq -c --arg v "$TAG" '.versions[] | select(.version==$v)')
+if [[ -z "$ENTRY" || "$ENTRY" == "null" ]]; then
+    echo "Versão ${TAG} não está em ${RELEASE_BASE_URL}/versions.json." >&2
+    echo "Disponíveis: $(echo "$MANIFEST" | jq -r '[.versions[].version] | join(", ")')" >&2
+    exit 1
+fi
+URL=$(echo "$ENTRY" | jq -r '.url')
+SHA256=$(echo "$ENTRY" | jq -r '.sha256')
+
+# 3. Baixar o tarball.
+TMPDIR=$(mktemp -d)
+curl -fSL "$URL" -o "$TMPDIR/plooma.tar.gz" || {
+    echo "Falha ao baixar ${URL}." >&2
+    rm -rf "$TMPDIR"; exit 1
+}
+
+# 4. Verificar integridade (sha256 do manifesto). Mismatch = aborta —
+#    não dependemos mais da confiança implícita do GitHub.
+if command -v shasum >/dev/null 2>&1; then
+    GOT=$(shasum -a 256 "$TMPDIR/plooma.tar.gz" | awk '{print $1}')
+else
+    GOT=$(sha256sum "$TMPDIR/plooma.tar.gz" | awk '{print $1}')
+fi
+if [[ "$GOT" != "$SHA256" ]]; then
+    echo "FALHA de integridade em ${URL}" >&2
+    echo "  esperado ${SHA256}" >&2
+    echo "  obtido   ${GOT}" >&2
+    rm -rf "$TMPDIR"; exit 1
+fi
+
+# 5. Extrair. O tarball envolve tudo em plooma-<version>/.
+tar -xzf "$TMPDIR/plooma.tar.gz" -C "$TMPDIR/"
+EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d -name "plooma-*" | head -1)
+
+# 6. Copiar o conteúdo pro diretório atual (sem a pasta-wrapper).
+( cd "$EXTRACTED" && tar cf - . ) | tar xf -
+
+# 7. Limpar.
+rm -rf "$TMPDIR"
+
+# 8. Verificar a extração.
+[ -f core/Bootstrap.php ] && [ -f bin/plooma ] || {
+    echo "Install falhou — core/Bootstrap.php ou bin/plooma não encontrados após extração." >&2
+    exit 1
+}
+
+echo "Plooma ${TAG} baixado (sha256 verificado)"
 ```
 
 Why tarball and not git clone:
@@ -104,7 +122,7 @@ Why tarball and not git clone:
 - **Versioned by design.** You always know exactly what version is going in.
 - **Cross-machine reliable.** Same flow works whether the user is on the machine that originally installed it or coming fresh.
 
-If the user passes `--repo=<some/fork>`, swap the `REPO` variable. The user's fork must also be tagged for tarballs to work; if not, recommend they tag it or fall back to a default-branch tarball: `https://github.com/<repo>/archive/refs/heads/main.tar.gz` (works but no version pinning — record `main-<short-sha>` in `.plooma-version`).
+If the user passes `--release-base-url=<url>`, set `RELEASE_BASE_URL` to it (self-hosters / mirrors). The mirror must serve the same `versions.json` + tarball layout that `bin/release` produces. There is no GitHub fallback by design — the canonical source repo is private; `releases.plooma.io` is the single distribution endpoint.
 
 The tarball Github gives us already excludes `.git/` — so there's nothing to clean up afterwards on that front.
 
@@ -237,8 +255,7 @@ rm -f .gitignore
 # the file sits dormant in the project after install. Worse: a user
 # who edits the local copy expecting to customize upgrade behavior
 # would get no effect (silently confusing). The `.plooma-version` file
-# keeps `manifest_url` pointing at the upstream version on GitHub
-# for anyone who wants to consult it.
+# keeps `release_base_url` so `plooma:upgrade` knows where to pull from.
 rm -f engine-manifest.json
 ```
 
@@ -262,23 +279,21 @@ Keeping the folder is the simpler, safer choice. It's a few files of git-tracked
 After cleanup succeeds, record what version was just installed. This is the file that future `plooma:upgrade` reads to know "where you are" — it's how the project tracks its Plooma version once `.git/` is gone.
 
 ```bash
-# The version comes from core/VERSION (which the tarball put there).
-# .plooma-version is project metadata written by the install/upgrade skills.
+# A versão vem de core/VERSION (que o tarball trouxe).
+# .plooma-version é metadado do projeto escrito pelas skills install/upgrade.
 INSTALLED_VERSION=$(cat core/VERSION 2>/dev/null || echo "unknown")
 INSTALLED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-SOURCE_REPO="${REPO:-elleven-digital/plooma}"
 
 cat > .plooma-version <<EOF
 {
   "version": "${INSTALLED_VERSION}",
   "installed_at": "${INSTALLED_AT}",
-  "source_repo": "${SOURCE_REPO}",
-  "manifest_url": "https://raw.githubusercontent.com/${SOURCE_REPO}/${INSTALLED_VERSION}/engine-manifest.json"
+  "release_base_url": "${RELEASE_BASE_URL}"
 }
 EOF
 ```
 
-The `manifest_url` is a convenience: `plooma:upgrade` can fetch it without re-deriving the URL pattern. Updates to that pattern get recorded with the install — future-proof.
+The `release_base_url` records where this project pulls releases from, so `plooma:upgrade` reads it straight from `.plooma-version` (the engine manifest is removed post-install, so it can't come from there). A project installed from a mirror keeps upgrading from that mirror.
 
 `.plooma-version` lives at the project root and **goes along with the project** when deployed via `plooma:ssh-deploy` or downloaded via `plooma:ssh-download`. So any machine that has the project knows what version it's running. (If the user runs `git init` later, they'll likely want to commit this file — it's part of the project's identity, not a secret.)
 
@@ -315,7 +330,7 @@ Adjust the login URL based on what the user said about deployment context. If th
 
 ## Edge cases & failure modes
 
-- **Tarball download fails (network, 404, etc.)** → show the curl stderr verbatim, abort. Don't leave partial state. If the user passed `--version=` with a non-existent tag, suggest checking https://github.com/elleven-digital/plooma/tags for valid tags.
+- **Tarball download fails (network, 404, etc.)** → show the curl stderr verbatim, abort. Don't leave partial state. If the user passed `--version=` with a non-existent tag, suggest checking the available versions at `https://releases.plooma.io/versions.json`.
 - **DB credentials wrong** → catch the FAIL output, re-ask credentials, regenerate `.env`, retry. Don't loop forever — give up after 3 tries and tell the user to debug DB connectivity manually.
 - **User aborts mid-flow (Ctrl+C, says "stop")** → leave whatever's already on disk, tell them they can resume by running `./bin/plooma install` directly once `.env` is correct.
 - **`.env` already exists** → never overwrite without explicit confirmation. Offer to merge new keys into existing file.

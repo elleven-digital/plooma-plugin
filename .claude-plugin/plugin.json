@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Claude Code plugin for Plooma — install, upgrade, deploy via SSH, manage remote content, and convert static templates into Plooma themes. Six skills covering the full lifecycle of a Plooma project.",
   "author": {
-    "name": "Rick Falaschi",
-    "url": "https://github.com/rickfalaschi"
+    "name": "Elleven Digital",
+    "url": "https://github.com/elleven-digital"
   },
   "repository": "https://github.com/elleven-digital/plooma-plugin",
   "homepage": "https://github.com/elleven-digital/plooma-plugin",

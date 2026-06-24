@@ -1,6 +1,6 @@
 ---
 name: upgrade
-description: Upgrade Plooma (formerly Plooma CMS) in an existing project to the latest version (or a specific version) from elleven-digital/plooma. Uses the manifest+tarball model — reads `.plooma-version` to know the current version, hits the GitHub tags API for the latest, downloads the tarball, replaces only the engine paths declared in `engine-manifest.json`, runs new migrations, and updates `.plooma-version`. Strictly preserves user content (`theme/`, `storage/`, `.env`, the live `.htaccess` and `robots.txt`, `.deploy/`, `.claude/`, and any random files the user added). Does NOT depend on git — works on any machine that has the project, regardless of whether it was originally installed there or downloaded from a server via plooma:ssh-download. Use this skill whenever the user wants to update an installed Plooma project — phrases like "atualiza o plooma cms desse projeto", "puxa o update mais recente do plooma", "upgrade plooma para a última versão", "tem versão nova do plooma-cms?", "rode update do plooma aqui", "update the plooma-cms engine in this project", "instala a versão v1.2.3 nesse projeto" (if a specific version is wanted, pass --version=vX.Y.Z). Triggers in Portuguese and English. Always operates inside an existing Plooma project (must have `core/Bootstrap.php`). Do NOT use for: (a) fresh install — that's plooma:install (downloads from scratch), (b) theme conversion — that's plooma:theme-convert, (c) running specific CLI commands like `bin/plooma migrate` standalone (the user just wants to run the command, not upgrade the engine), (d) editing site.json or content. Mentioning "plooma" alone does NOT trigger — only explicit upgrade/update intent does.
+description: Upgrade Plooma (formerly Plooma CMS) in an existing project to the latest version (or a specific version) from releases.plooma.io. Uses the manifest+tarball model — reads `.plooma-version` to know the current version, fetches the latest from the release manifest (`releases.plooma.io/versions.json`), downloads and sha256-verifies the tarball, replaces only the engine paths declared in `engine-manifest.json`, runs new migrations, and updates `.plooma-version`. Strictly preserves user content (`theme/`, `storage/`, `.env`, the live `.htaccess` and `robots.txt`, `.deploy/`, `.claude/`, and any random files the user added). Does NOT depend on git — works on any machine that has the project, regardless of whether it was originally installed there or downloaded from a server via plooma:ssh-download. Use this skill whenever the user wants to update an installed Plooma project — phrases like "atualiza o plooma cms desse projeto", "puxa o update mais recente do plooma", "upgrade plooma para a última versão", "tem versão nova do plooma-cms?", "rode update do plooma aqui", "update the plooma-cms engine in this project", "instala a versão v1.2.3 nesse projeto" (if a specific version is wanted, pass --version=vX.Y.Z). Triggers in Portuguese and English. Always operates inside an existing Plooma project (must have `core/Bootstrap.php`). Do NOT use for: (a) fresh install — that's plooma:install (downloads from scratch), (b) theme conversion — that's plooma:theme-convert, (c) running specific CLI commands like `bin/plooma migrate` standalone (the user just wants to run the command, not upgrade the engine), (d) editing site.json or content. Mentioning "plooma" alone does NOT trigger — only explicit upgrade/update intent does.
 ---
 
 # Upgrade Plooma in place
@@ -21,9 +21,9 @@ Three things make this skill possible without any persistent git in the project:
 
 1. **`.plooma-version`** — a small JSON file at the project root that records the version currently installed. Written by `plooma:install` and updated by this skill. Travels with the project (gets deployed via `plooma:ssh-deploy`, downloaded back via `plooma:ssh-download`).
 
-2. **GitHub tags API** — `https://api.github.com/repos/elleven-digital/plooma/tags` lists all release tags. The first item is the most recent. Comparison is just strings.
+2. **Release manifest** — `https://releases.plooma.io/versions.json` lists all available versions and their tarball URLs + sha256 hashes. The `latest` field names the most recent version.
 
-3. **Release tarballs** — `https://github.com/elleven-digital/plooma/archive/refs/tags/<tag>.tar.gz` is a static URL that GitHub serves for any tag. We download, extract, and selectively copy the engine paths.
+3. **Release tarballs** — served from `releases.plooma.io` per the URL in each version entry. We download, verify sha256, extract, and selectively copy the engine paths.
 
 Combined, these three give us "what version am I", "what version exists", and "how do I get that version's files" — all without git on the user's machine.
 
@@ -59,7 +59,7 @@ Read it:
 
 ```bash
 CURRENT=$(jq -r '.version' .plooma-version)
-SOURCE_REPO=$(jq -r '.source_repo // "elleven-digital/plooma"' .plooma-version)
+RELEASE_BASE_URL=$(jq -r '.release_base_url // "https://releases.plooma.io"' .plooma-version)
 ```
 
 Easy path. Continue to Phase 2.
@@ -107,19 +107,23 @@ This unblocks the most common real-world scenario: someone has a Plooma project 
 
 ## Phase 2 — Resolve target version
 
-If user passed `--version=vX.Y.Z`, use that. Otherwise hit the tags API:
+If user passed `--version=vX.Y.Z`, use that. Otherwise hit the release manifest:
 
 ```bash
-TARGET=$(curl -fsS "https://api.github.com/repos/${SOURCE_REPO}/tags" \
-  | jq -r '.[0].name')
-```
+MANIFEST=$(curl -fsSL "${RELEASE_BASE_URL}/versions.json") \
+  || die "Não consegui buscar ${RELEASE_BASE_URL}/versions.json."
 
-Validate that the tag exists by checking the corresponding tarball URL returns 200:
+if [[ -n "$VERSION" ]]; then
+  TARGET="$VERSION"
+else
+  TARGET=$(echo "$MANIFEST" | jq -r '.latest')
+fi
 
-```bash
-curl -fsLI -o /dev/null \
-  "https://github.com/${SOURCE_REPO}/archive/refs/tags/${TARGET}.tar.gz" \
-  || die "Tag ${TARGET} not found at ${SOURCE_REPO}."
+ENTRY=$(echo "$MANIFEST" | jq -c --arg v "$TARGET" '.versions[] | select(.version==$v)')
+[[ -n "$ENTRY" && "$ENTRY" != "null" ]] \
+  || die "Versão ${TARGET} não encontrada em ${RELEASE_BASE_URL}/versions.json."
+URL=$(echo "$ENTRY" | jq -r '.url')
+SHA256=$(echo "$ENTRY" | jq -r '.sha256')
 ```
 
 ## Phase 3 — Compare
@@ -131,14 +135,6 @@ if [[ "$CURRENT" == "$TARGET" ]]; then
 fi
 ```
 
-For curiosity, you can also fetch the commits-between view (only useful when both are tags on the same upstream):
-
-```bash
-COMPARE=$(curl -fsS "https://api.github.com/repos/${SOURCE_REPO}/compare/${CURRENT}...${TARGET}")
-```
-
-Save it for Phase 4. The `commits` array has each commit's message, useful for showing the changelog.
-
 ## Phase 4 — Confirm with user
 
 Show a clear summary before doing anything destructive:
@@ -147,11 +143,6 @@ Show a clear summary before doing anything destructive:
 Upgrade plan:
   De:  v1.4.2  (instalado em 2026-04-29)
   Pra: v1.5.0  (3 commits novos)
-
-  Mudanças:
-    - feat: adiciona campo de redirect em pages
-    - fix: SQL injection em FormSubmission::byEmail
-    - chore: bump min PHP para 8.2.5
 
   Vai SUBSTITUIR (engine paths do manifest):
     core/, bin/, migrations/, index.php
@@ -178,16 +169,23 @@ Wait for explicit "y" or equivalent.
 
 ```bash
 TMPDIR=$(mktemp -d)
-TARBALL="${TMPDIR/plooma-${TARGET}.tar.gz"
-TARBALL_URL="https://github.com/${SOURCE_REPO}/archive/refs/tags/${TARGET}.tar.gz"
+TARBALL="$TMPDIR/plooma-${TARGET}.tar.gz"
 
-curl -fSL "$TARBALL_URL" -o "$TARBALL" || die "Failed to download $TARBALL_URL"
+curl -fSL "$URL" -o "$TARBALL" || { rm -rf "$TMPDIR"; die "Falha ao baixar $URL"; }
+
+# Verificar integridade (sha256 do manifesto) — mismatch aborta.
+if command -v shasum >/dev/null 2>&1; then
+    GOT=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+else
+    GOT=$(sha256sum "$TARBALL" | awk '{print $1}')
+fi
+[[ "$GOT" == "$SHA256" ]] || { rm -rf "$TMPDIR"; die "Falha de integridade: esperado $SHA256, obtido $GOT"; }
 
 tar -xzf "$TARBALL" -C "$TMPDIR/"
-EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d -name "*-${TARGET#v}*" | head -1)
+EXTRACTED=$(find "$TMPDIR" -maxdepth 1 -type d -name "plooma-*" | head -1)
 
-[ -d "$EXTRACTED" ] || die "Tarball extracted but expected directory not found in $TMPDIR"
-[ -f "$EXTRACTED/engine-manifest.json" ] || die "Tarball doesn't contain engine-manifest.json — wrong version?"
+[ -d "$EXTRACTED" ] || die "Tarball extraído mas o diretório esperado não foi achado em $TMPDIR"
+[ -f "$EXTRACTED/engine-manifest.json" ] || die "Tarball não contém engine-manifest.json — versão errada?"
 ```
 
 ## Phase 6 — Apply engine paths
@@ -266,8 +264,7 @@ cat > .plooma-version <<EOF
   "version": "${TARGET}",
   "installed_at": "${INSTALLED_AT}",
   "previous_version": "${CURRENT}",
-  "source_repo": "${SOURCE_REPO}",
-  "manifest_url": "https://raw.githubusercontent.com/${SOURCE_REPO}/${TARGET}/engine-manifest.json"
+  "release_base_url": "${RELEASE_BASE_URL}"
 }
 EOF
 ```
@@ -311,7 +308,7 @@ Show the previous version as the explicit rollback command — it's exactly what
 
 - **Migração que falha**: engine files já estão no estado novo, mas DB não. Rodar `bin/plooma migrate:status` mostra pendentes; `bin/plooma migrate` pode ser reexecutado depois.
 
-- **Usuário tem fork**: `--repo=usuario/fork-plooma` substitui SOURCE_REPO no momento. Fork precisa ter tags + `engine-manifest.json` na raiz.
+- **Projeto instalado de um mirror**: se o install usou `--release-base-url=<url>`, esse endpoint já está gravado no `.plooma-version` (`release_base_url`) e o upgrade o usa automaticamente. O mirror precisa servir o mesmo `versions.json` + tarballs que o `bin/release` gera.
 
 - **`--version=v0.X.Y` muito antigo**: pode não ter `engine-manifest.json` (vem em v1.0.0+). Skill detecta a ausência no Phase 5 e aborta com hint pra usar versão >= v1.0.0.
 
@@ -323,7 +320,7 @@ Show the previous version as the explicit rollback command — it's exactly what
 - Force-merge mudanças locais em arquivos engine — se o usuário modificou `core/Bootstrap.php` localmente, essas mudanças são perdidas. (Recomendação: extensions/customizations devem ir em `theme/` ou via hooks futuros, não direto em `core/`)
 - Usar git em momento nenhum — nem na máquina do user, nem nada
 - Rodar backup automático do DB — assume que o user tem seu próprio processo de backup
-- Resolver `latest` de forma dinâmica que pega `main` HEAD (precisa ser uma tag explícita; pra ter uma tag por commit, configure GitHub Action no upstream)
+- Resolver `latest` de forma dinâmica que pega `main` HEAD (a versão precisa existir no `versions.json` do endpoint — é publicada pelo `bin/release` do repo do engine)
 
 ## Variants the user might phrase
 
